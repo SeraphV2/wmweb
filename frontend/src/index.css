@@ -187,6 +187,41 @@ a { text-decoration: none; color: inherit; }
 .kanban-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .kanban-card:active { cursor: grabbing; }
 
+/* ── View toggle (Bookings) ────────────────────────────────────────── */
+.view-toggle { display: flex; gap: 4px; }
+
+/* ── Calendar (Bookings shoot schedule) ───────────────────────────── */
+.calendar-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.calendar-dow-row { margin-bottom: 6px; }
+.calendar-dow-cell {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-align: center; text-transform: uppercase; letter-spacing: .04em;
+}
+.calendar-cell {
+  min-height: 92px; background: rgba(255,255,255,.75); border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm); padding: 6px; cursor: pointer;
+  display: flex; flex-direction: column; gap: 3px; overflow: hidden;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.calendar-cell:hover { background: rgba(255,255,255,.95); box-shadow: var(--shadow-sm); }
+.calendar-cell.outside { opacity: .4; }
+.calendar-cell.today { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(245,158,11,.18) inset; }
+.calendar-daynum { font-size: 11px; font-weight: 700; color: var(--muted); }
+.calendar-chip {
+  font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 600; cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: transform .12s ease;
+}
+.calendar-chip:hover { transform: translateX(1px); }
+.calendar-more { font-size: 10px; color: var(--muted); padding-left: 2px; }
+
+@media (max-width: 768px) {
+  .calendar-cell { min-height: 60px; padding: 4px; }
+  .calendar-chip { font-size: 9px; }
+  .calendar-dow-cell { font-size: 9px; }
+}
+
 /* ── Modal (glass) ─────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(28,20,16,.4);
