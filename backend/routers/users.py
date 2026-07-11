@@ -33,6 +33,17 @@ def list_users(
     return db.get_users()
 
 
+@router.get("/assignable")
+def assignable_users(
+    _user: dict = Depends(get_current_user),
+    db: Database = Depends(get_db),
+):
+    return [
+        {'id': u['id'], 'name': u['full_name'] or u['username']}
+        for u in db.get_users() if u['active']
+    ]
+
+
 @router.post("/")
 def create_user(
     body: UserCreate,

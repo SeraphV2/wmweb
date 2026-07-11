@@ -41,6 +41,7 @@ function Pill({ value, options, colors, onChange }) {
 export default function Tasks() {
   const [rows, setRows] = useState([])
   const [groupNames, setGroupNames] = useState([])
+  const [people, setPeople] = useState([])
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState(null) // null | 'new' | 'edit'
   const [editId, setEditId] = useState(null)
@@ -58,6 +59,7 @@ export default function Tasks() {
   useEffect(() => { load() }, [load])
   useAutoRefresh(load)
   useEffect(() => { api.taskGroups().then(setGroupNames).catch(() => {}) }, [])
+  useEffect(() => { api.assignableUsers().then(setPeople).catch(() => {}) }, [])
 
   const groups = useMemo(() => {
     const map = {}
@@ -256,7 +258,16 @@ export default function Tasks() {
               <input className="input" list="taskgroups" value={form.group_name} onChange={e => setForm(f => ({ ...f, group_name: e.target.value }))} placeholder="e.g. This Week" />
               <datalist id="taskgroups">{groupNames.map(g => <option key={g} value={g} />)}</datalist>
             </div>
-            <div className="field"><label>Assignee</label>{F('assignee')}</div>
+            <div className="field">
+              <label>Assignee</label>
+              <select className="input" value={form.assignee} onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))}>
+                <option value="">— Unassigned —</option>
+                {people.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                {form.assignee && !people.some(p => p.name === form.assignee) && (
+                  <option value={form.assignee}>{form.assignee}</option>
+                )}
+              </select>
+            </div>
           </div>
           <div className="grid-2">
             <div className="field">

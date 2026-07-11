@@ -55,6 +55,7 @@ export const api = {
   createUser:  (data) => req('POST', '/api/users/', data),
   updateUser:  (id, data) => req('PUT', `/api/users/${id}`, data),
   deleteUser:  (id) => req('DELETE', `/api/users/${id}`),
+  assignableUsers: () => req('GET', '/api/users/assignable'),
 
   // Dashboard
   dashStats:      () => req('GET', '/api/dashboard/stats'),
