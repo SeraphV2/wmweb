@@ -18,3 +18,13 @@ def upcoming(db: Database = Depends(get_db)):
 @router.get("/recent-invoices")
 def recent_invoices(db: Database = Depends(get_db)):
     return db.get_recent_invoices(limit=5)
+
+
+@router.get("/task-status-counts")
+def task_status_counts(db: Database = Depends(get_db)):
+    return db.get_task_status_counts()
+
+
+@router.get("/tasks-due-soon")
+def tasks_due_soon(db: Database = Depends(get_db)):
+    return db.get_tasks_due_soon(days=7)

@@ -19,6 +19,14 @@ const PROJ_BADGE = {
   Cancelled:   'badge-gray',
 }
 
+const TASK_STATUSES = ['Not Started', 'Working On It', 'Stuck', 'Done']
+const TASK_STATUS_COLORS = {
+  'Not Started':   { bg: '#f3f4f6', color: '#6b7280' },
+  'Working On It': { bg: '#fef3c7', color: '#92400e' },
+  'Stuck':         { bg: '#fee2e2', color: '#991b1b' },
+  'Done':          { bg: '#dcfce7', color: '#15803d' },
+}
+
 function fmt(v) {
   const sym = '£'
   return `${sym}${Number(v || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -28,11 +36,14 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [upcoming, setUpcoming] = useState([])
   const [recent, setRecent] = useState([])
+  const [taskCounts, setTaskCounts] = useState({})
+  const [dueSoon, setDueSoon] = useState([])
   const navigate = useNavigate()
+  const todayStr = new Date().toISOString().slice(0, 10)
 
   const load = useCallback(() => {
-    Promise.all([api.dashStats(), api.dashUpcoming(), api.dashRecent()])
-      .then(([s, u, r]) => { setStats(s); setUpcoming(u); setRecent(r) })
+    Promise.all([api.dashStats(), api.dashUpcoming(), api.dashRecent(), api.dashTaskCounts(), api.dashTasksDue()])
+      .then(([s, u, r, tc, td]) => { setStats(s); setUpcoming(u); setRecent(r); setTaskCounts(tc); setDueSoon(td) })
       .catch(console.error)
   }, [])
 
@@ -109,6 +120,64 @@ export default function Dashboard() {
                       <td><span className={`badge ${STATUS_BADGE[inv.status] || 'badge-gray'}`}>{inv.status}</span></td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        <div className="grid-dash">
+          {/* Tasks by status */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>📋 Tasks by Status</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>View all</button>
+            </div>
+            <div style={{ padding: 18, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {TASK_STATUSES.map(s => {
+                const c = TASK_STATUS_COLORS[s]
+                return (
+                  <div key={s} onClick={() => navigate('/tasks')} style={{
+                    cursor: 'pointer', flex: '1 1 100px', minWidth: 100,
+                    background: c.bg, color: c.color, borderRadius: 12, padding: '12px 14px', textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: 22, fontWeight: 700 }}>{taskCounts[s] ?? 0}</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2 }}>{s}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Tasks due soon */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>⏰ Tasks Due Soon</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>View all</button>
+            </div>
+            {dueSoon.length === 0 ? (
+              <div className="empty" style={{ padding: '30px 20px' }}>
+                <span className="icon">⏰</span>Nothing due in the next 7 days
+              </div>
+            ) : (
+              <table className="tbl">
+                <tbody>
+                  {dueSoon.map(t => {
+                    const overdue = t.due_date && t.due_date < todayStr
+                    const c = TASK_STATUS_COLORS[t.status] || TASK_STATUS_COLORS['Not Started']
+                    return (
+                      <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/tasks')}>
+                        <td>
+                          <div style={{ fontWeight: 600, fontSize: 13 }}>{t.title}</div>
+                          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.assignee || '—'}</div>
+                        </td>
+                        <td style={{ fontSize: 12, color: overdue ? '#dc2626' : 'var(--muted)', fontWeight: overdue ? 700 : 400 }}>
+                          {overdue ? 'Overdue · ' : ''}{t.due_date}
+                        </td>
+                        <td><span className="badge" style={{ background: c.bg, color: c.color }}>{t.status}</span></td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             )}

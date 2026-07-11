@@ -630,6 +630,17 @@ class Database:
                 "UPDATE tasks SET group_name=%s, position=%s WHERE id=%s",
                 (it['group_name'], it['position'], it['id']))
 
+    def get_task_status_counts(self):
+        self._ex("SELECT status, COUNT(*) AS c FROM tasks GROUP BY status")
+        return {r['status']: r['c'] for r in self._rows()}
+
+    def get_tasks_due_soon(self, days=7, limit=8):
+        self._ex(
+            "SELECT * FROM tasks WHERE due_date IS NOT NULL AND status!='Done' "
+            "AND due_date <= DATE_ADD(CURDATE(), INTERVAL %s DAY) "
+            "ORDER BY due_date ASC LIMIT %s", (days, limit))
+        return self._rows()
+
     def delete_task(self, tid):
         self._ex("DELETE FROM tasks WHERE id=%s", (tid,))
 

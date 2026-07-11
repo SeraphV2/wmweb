@@ -61,6 +61,8 @@ export const api = {
   dashStats:      () => req('GET', '/api/dashboard/stats'),
   dashUpcoming:   () => req('GET', '/api/dashboard/upcoming'),
   dashRecent:     () => req('GET', '/api/dashboard/recent-invoices'),
+  dashTaskCounts: () => req('GET', '/api/dashboard/task-status-counts'),
+  dashTasksDue:   () => req('GET', '/api/dashboard/tasks-due-soon'),
 
   // Clients
   getClients:     (search = '') => req('GET', `/api/clients/?search=${encodeURIComponent(search)}`),
