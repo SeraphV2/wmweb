@@ -6,6 +6,7 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const STATUSES = ['Not Started', 'Working On It', 'Stuck', 'Done']
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']
+const PRIORITY_RANK = { Low: 0, Medium: 1, High: 2, Critical: 3 }
 
 const STATUS_COLORS = {
   'Not Started':   { bg: '#f3f4f6', color: '#6b7280' },
@@ -19,9 +20,8 @@ const PRIORITY_COLORS = {
   High:     { bg: '#ffedd5', color: '#c2410c' },
   Critical: { bg: '#fee2e2', color: '#991b1b' },
 }
-const GROUP_COLORS = ['#f59e0b', '#3b82f6', '#22c55e', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
-const EMPTY_FORM = { title: '', group_name: 'General', status: 'Not Started', priority: 'Medium', assignee: '', due_date: '', notes: '' }
+const EMPTY_FORM = { title: '', status: 'Not Started', priority: 'Medium', assignee: '', due_date: '', notes: '' }
 
 function Pill({ value, options, colors, onChange }) {
   const c = colors[value] || { bg: '#f3f4f6', color: '#6b7280' }
@@ -40,15 +40,14 @@ function Pill({ value, options, colors, onChange }) {
 
 export default function Tasks() {
   const [rows, setRows] = useState([])
-  const [groupNames, setGroupNames] = useState([])
   const [people, setPeople] = useState([])
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState(null) // null | 'new' | 'edit'
+  const [modal, setModal] = useState(null) // null | 'form'
   const [editId, setEditId] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [dragId, setDragId] = useState(null)
-  const [dragOver, setDragOver] = useState(null) // { group, beforeId } | null
+  const [dragOverStatus, setDragOverStatus] = useState(null)
   const dragging = useRef(false)
 
   const load = useCallback(() => {
@@ -58,24 +57,24 @@ export default function Tasks() {
 
   useEffect(() => { load() }, [load])
   useAutoRefresh(load)
-  useEffect(() => { api.taskGroups().then(setGroupNames).catch(() => {}) }, [])
   useEffect(() => { api.assignableUsers().then(setPeople).catch(() => {}) }, [])
 
-  const groups = useMemo(() => {
-    const map = {}
+  const columns = useMemo(() => {
+    const map = Object.fromEntries(STATUSES.map(s => [s, []]))
     for (const t of rows) {
-      const g = t.group_name || 'General'
-      if (!map[g]) map[g] = []
-      map[g].push(t)
+      const s = STATUSES.includes(t.status) ? t.status : 'Not Started'
+      map[s].push(t)
     }
-    return Object.entries(map)
+    for (const s of STATUSES) {
+      map[s].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1) || a.id - b.id)
+    }
+    return map
   }, [rows])
 
   function openNew() { setForm(EMPTY_FORM); setEditId(null); setModal('form') }
   function openEdit(t) {
     setForm({
-      title: t.title || '', group_name: t.group_name || 'General',
-      status: t.status || 'Not Started', priority: t.priority || 'Medium',
+      title: t.title || '', status: t.status || 'Not Started', priority: t.priority || 'Medium',
       assignee: t.assignee || '', due_date: t.due_date || '', notes: t.notes || '',
     })
     setEditId(t.id)
@@ -109,57 +108,20 @@ export default function Tasks() {
     api.updateTaskPriority(t.id, priority).catch(e => { toast(e.message, 'error'); load() })
   }
 
-  // Drag-and-drop: reorder within a group, or move to a different group.
-  // beforeId === null means "drop at the end of this group".
-  function moveTask(draggedId, targetGroup, beforeId) {
-    setRows(rs => {
-      const dragged = rs.find(r => r.id === draggedId)
-      if (!dragged) return rs
-      const rest = rs.filter(r => r.id !== draggedId)
-      const moved = { ...dragged, group_name: targetGroup }
-
-      let insertAt = rest.length
-      if (beforeId != null) {
-        const idx = rest.findIndex(r => r.id === beforeId)
-        if (idx !== -1) insertAt = idx
-      } else {
-        let lastIdx = -1
-        rest.forEach((r, i) => { if ((r.group_name || 'General') === targetGroup) lastIdx = i })
-        insertAt = lastIdx === -1 ? rest.length : lastIdx + 1
-      }
-
-      const next = [...rest.slice(0, insertAt), moved, ...rest.slice(insertAt)]
-
-      const counters = {}
-      const items = next.map(r => {
-        const g = r.group_name || 'General'
-        counters[g] = (counters[g] ?? -1) + 1
-        return { id: r.id, group_name: g, position: counters[g] }
-      })
-      api.reorderTasks(items).catch(e => { toast(e.message, 'error'); load() })
-
-      return next
-    })
-  }
-
-  function onRowDragStart(t) {
+  function onCardDragStart(t) {
     dragging.current = true
     setDragId(t.id)
   }
-  function onRowDragEnd() {
+  function onCardDragEnd() {
     dragging.current = false
     setDragId(null)
-    setDragOver(null)
+    setDragOverStatus(null)
   }
-  function onRowDrop(e, targetGroup, targetId) {
+  function onColumnDrop(e, status) {
     e.preventDefault()
-    if (dragId != null && dragId !== targetId) moveTask(dragId, targetGroup, targetId)
-    onRowDragEnd()
-  }
-  function onZoneDrop(e, targetGroup) {
-    e.preventDefault()
-    if (dragId != null) moveTask(dragId, targetGroup, null)
-    onRowDragEnd()
+    const t = rows.find(r => r.id === dragId)
+    if (t && t.status !== status) setStatus(t, status)
+    onCardDragEnd()
   }
 
   function F(key) {
@@ -176,68 +138,63 @@ export default function Tasks() {
         </div>
       </div>
 
-      <div className="page-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="page-body">
         {rows.length === 0 ? (
           <div className="card empty">
             <span className="icon">✅</span>No tasks yet — click + New Task to get started
           </div>
-        ) : groups.map(([groupName, items], gi) => (
-          <div key={groupName} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{
-              padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10,
-              borderLeft: `4px solid ${GROUP_COLORS[gi % GROUP_COLORS.length]}`,
-              background: 'rgba(245,239,229,.7)', borderBottom: '1px solid var(--border-soft)',
-            }}>
-              <span style={{ fontWeight: 700, fontSize: 14 }}>{groupName}</span>
-              <span style={{ fontSize: 11, color: 'var(--muted)' }}>{items.length} task{items.length === 1 ? '' : 's'}</span>
-            </div>
-            <div className="tbl-wrap">
-              <table className="tbl">
-                <thead>
-                  <tr><th style={{ width: 28 }}></th><th>Title</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due Date</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {items.map(t => (
-                    <tr
-                      key={t.id}
-                      className={dragOver?.beforeId === t.id ? 'drag-over' : ''}
-                      style={{ cursor: 'pointer', opacity: dragId === t.id ? 0.35 : 1 }}
-                      onClick={() => openEdit(t)}
-                      onDragOver={e => { e.preventDefault(); setDragOver({ group: groupName, beforeId: t.id }) }}
-                      onDragLeave={() => setDragOver(dv => (dv?.beforeId === t.id ? null : dv))}
-                      onDrop={e => onRowDrop(e, groupName, t.id)}
-                    >
-                      <td
-                        className="drag-handle"
+        ) : (
+          <div className="kanban">
+            {STATUSES.map(status => {
+              const c = STATUS_COLORS[status]
+              const items = columns[status]
+              return (
+                <div
+                  key={status}
+                  className={`kanban-col${dragOverStatus === status ? ' drag-over' : ''}`}
+                  onDragOver={e => { e.preventDefault(); setDragOverStatus(status) }}
+                  onDragLeave={() => setDragOverStatus(s => (s === status ? null : s))}
+                  onDrop={e => onColumnDrop(e, status)}
+                >
+                  <div className="kanban-col-header" style={{ borderTop: `3px solid ${c.color}` }}>
+                    <span style={{ fontWeight: 700, fontSize: 13 }}>{status}</span>
+                    <span className="badge" style={{ background: c.bg, color: c.color }}>{items.length}</span>
+                  </div>
+                  <div className="kanban-col-body">
+                    {items.length === 0 ? (
+                      <div style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', padding: '16px 8px' }}>No tasks</div>
+                    ) : items.map(t => (
+                      <div
+                        key={t.id}
+                        className="kanban-card"
                         draggable
-                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onRowDragStart(t) }}
-                        onDragEnd={onRowDragEnd}
-                        onClick={e => e.stopPropagation()}
-                        title="Drag to reorder"
-                      >⠿</td>
-                      <td style={{ fontWeight: 600 }}>{t.title}</td>
-                      <td><Pill value={t.status} options={STATUSES} colors={STATUS_COLORS} onChange={v => setStatus(t, v)} /></td>
-                      <td><Pill value={t.priority} options={PRIORITIES} colors={PRIORITY_COLORS} onChange={v => setPriority(t, v)} /></td>
-                      <td style={{ color: 'var(--muted)', fontSize: 12 }}>{t.assignee || '—'}</td>
-                      <td style={{ fontSize: 12 }}>{t.due_date || '—'}</td>
-                      <td>
-                        <button className="btn btn-danger btn-sm" onClick={e => { e.stopPropagation(); del(t) }}>🗑</button>
-                      </td>
-                    </tr>
-                  ))}
-                  <tr
-                    className={dragOver?.group === groupName && dragOver?.beforeId == null ? 'drag-over' : ''}
-                    onDragOver={e => { e.preventDefault(); setDragOver({ group: groupName, beforeId: null }) }}
-                    onDragLeave={() => setDragOver(dv => (dv?.group === groupName && dv?.beforeId == null ? null : dv))}
-                    onDrop={e => onZoneDrop(e, groupName)}
-                  >
-                    <td colSpan={7} style={{ height: 12, padding: 0 }} />
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onCardDragStart(t) }}
+                        onDragEnd={onCardDragEnd}
+                        onClick={() => openEdit(t)}
+                        style={{ opacity: dragId === t.id ? 0.35 : 1 }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{t.title}</span>
+                          <button className="btn btn-danger btn-sm" style={{ padding: '2px 6px', flexShrink: 0 }} onClick={e => { e.stopPropagation(); del(t) }}>🗑</button>
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, alignItems: 'center' }}>
+                          <Pill value={t.priority} options={PRIORITIES} colors={PRIORITY_COLORS} onChange={v => setPriority(t, v)} />
+                          <Pill value={t.status} options={STATUSES} colors={STATUS_COLORS} onChange={v => setStatus(t, v)} />
+                        </div>
+                        {(t.assignee || t.due_date) && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>
+                            <span>{t.assignee || ''}</span>
+                            <span>{t.due_date || ''}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-        ))}
+        )}
       </div>
 
       {modal === 'form' && (
@@ -252,22 +209,15 @@ export default function Tasks() {
           </>}
         >
           <div className="field"><label>Title *</label>{F('title')}</div>
-          <div className="grid-2">
-            <div className="field">
-              <label>Group</label>
-              <input className="input" list="taskgroups" value={form.group_name} onChange={e => setForm(f => ({ ...f, group_name: e.target.value }))} placeholder="e.g. This Week" />
-              <datalist id="taskgroups">{groupNames.map(g => <option key={g} value={g} />)}</datalist>
-            </div>
-            <div className="field">
-              <label>Assignee</label>
-              <select className="input" value={form.assignee} onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))}>
-                <option value="">— Unassigned —</option>
-                {people.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-                {form.assignee && !people.some(p => p.name === form.assignee) && (
-                  <option value={form.assignee}>{form.assignee}</option>
-                )}
-              </select>
-            </div>
+          <div className="field">
+            <label>Assignee</label>
+            <select className="input" value={form.assignee} onChange={e => setForm(f => ({ ...f, assignee: e.target.value }))}>
+              <option value="">— Unassigned —</option>
+              {people.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              {form.assignee && !people.some(p => p.name === form.assignee) && (
+                <option value={form.assignee}>{form.assignee}</option>
+              )}
+            </select>
           </div>
           <div className="grid-2">
             <div className="field">
