@@ -199,6 +199,17 @@ class Database:
                 notes           TEXT,
                 created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
+            """CREATE TABLE IF NOT EXISTS tasks (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                title       VARCHAR(255) NOT NULL,
+                group_name  VARCHAR(100) DEFAULT 'General',
+                status      VARCHAR(50)  DEFAULT 'Not Started',
+                priority    VARCHAR(50)  DEFAULT 'Medium',
+                assignee    VARCHAR(100) DEFAULT '',
+                due_date    DATE,
+                notes       TEXT,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
         ]
         for stmt in stmts:
             self._ex(stmt)
@@ -565,6 +576,51 @@ class Database:
             "SELECT DISTINCT category FROM equipment "
             "WHERE category IS NOT NULL ORDER BY category")
         return [row['category'] for row in self._rows()]
+
+    # ── Tasks ─────────────────────────────────────────────────────────────────
+
+    def get_tasks(self, search=''):
+        q = "SELECT * FROM tasks WHERE 1=1"
+        params = []
+        if search:
+            q += " AND (title LIKE %s OR assignee LIKE %s OR group_name LIKE %s)"
+            params.extend([f'%{search}%'] * 3)
+        q += " ORDER BY group_name, id"
+        self._ex(q, params)
+        return self._rows()
+
+    def get_task_groups(self):
+        self._ex(
+            "SELECT DISTINCT group_name FROM tasks "
+            "WHERE group_name IS NOT NULL ORDER BY group_name")
+        return [row['group_name'] for row in self._rows()]
+
+    def add_task(self, data):
+        self._ex(
+            "INSERT INTO tasks (title,group_name,status,priority,assignee,due_date,notes) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            (data['title'], data.get('group_name', 'General') or 'General',
+             data.get('status', 'Not Started'), data.get('priority', 'Medium'),
+             data.get('assignee', ''), data.get('due_date') or None, data.get('notes', '')))
+        return self._mc.lastrowid
+
+    def update_task(self, tid, data):
+        self._ex(
+            "UPDATE tasks SET title=%s,group_name=%s,status=%s,priority=%s,"
+            "assignee=%s,due_date=%s,notes=%s WHERE id=%s",
+            (data['title'], data.get('group_name', 'General') or 'General',
+             data.get('status', 'Not Started'), data.get('priority', 'Medium'),
+             data.get('assignee', ''), data.get('due_date') or None,
+             data.get('notes', ''), tid))
+
+    def update_task_status(self, tid, status):
+        self._ex("UPDATE tasks SET status=%s WHERE id=%s", (status, tid))
+
+    def update_task_priority(self, tid, priority):
+        self._ex("UPDATE tasks SET priority=%s WHERE id=%s", (priority, tid))
+
+    def delete_task(self, tid):
+        self._ex("DELETE FROM tasks WHERE id=%s", (tid,))
 
     # ── Reports & Dashboard ───────────────────────────────────────────────────
 

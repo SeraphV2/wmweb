@@ -7,7 +7,7 @@ from auth import create_token, ADMIN_PASSWORD, hash_password, verify_password
 from deps import get_db, get_current_user
 from database import Database
 
-from routers import clients, projects, invoices, expenses, equipment, dashboard, reports, settings
+from routers import clients, projects, invoices, expenses, equipment, dashboard, reports, settings, tasks
 from routers import users as users_router
 
 
@@ -64,6 +64,7 @@ app.include_router(projects.router,       prefix="/api/projects",   dependencies
 app.include_router(invoices.router,       prefix="/api/invoices",   dependencies=auth_dep)
 app.include_router(expenses.router,       prefix="/api/expenses",   dependencies=auth_dep)
 app.include_router(equipment.router,      prefix="/api/equipment",  dependencies=auth_dep)
+app.include_router(tasks.router,          prefix="/api/tasks",      dependencies=auth_dep)
 app.include_router(reports.router,        prefix="/api/reports",    dependencies=auth_dep)
 app.include_router(settings.router,       prefix="/api/settings",   dependencies=auth_dep)
 app.include_router(users_router.router,   prefix="/api/users",      dependencies=auth_dep)

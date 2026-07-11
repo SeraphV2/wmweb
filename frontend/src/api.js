@@ -103,6 +103,15 @@ export const api = {
   updateEquipment: (id, data) => req('PUT', `/api/equipment/${id}`, data),
   deleteEquipment: (id) => req('DELETE', `/api/equipment/${id}`),
 
+  // Tasks
+  getTasks:       (search = '') => req('GET', `/api/tasks/?search=${encodeURIComponent(search)}`),
+  taskGroups:     () => req('GET', '/api/tasks/groups'),
+  createTask:     (data) => req('POST', '/api/tasks/', data),
+  updateTask:     (id, data) => req('PUT', `/api/tasks/${id}`, data),
+  updateTaskStatus:   (id, status) => req('PATCH', `/api/tasks/${id}/status`, { status }),
+  updateTaskPriority: (id, priority) => req('PATCH', `/api/tasks/${id}/priority`, { priority }),
+  deleteTask:     (id) => req('DELETE', `/api/tasks/${id}`),
+
   // Reports
   reportSummary:      (year) => req('GET', `/api/reports/summary?year=${year}`),
   monthlyRevenue:     (year) => req('GET', `/api/reports/monthly-revenue?year=${year}`),

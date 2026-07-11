@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import Tasks from './pages/Tasks'
 import Clients from './pages/Clients'
 import Bookings from './pages/Bookings'
 import Invoices from './pages/Invoices'
@@ -27,6 +28,7 @@ export default function App() {
         }>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard"  element={<Dashboard />} />
+          <Route path="tasks"      element={<Tasks />} />
           <Route path="clients"    element={<Clients />} />
           <Route path="bookings"   element={<Bookings />} />
           <Route path="invoices"   element={<Invoices />} />

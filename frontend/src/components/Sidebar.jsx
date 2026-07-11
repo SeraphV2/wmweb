@@ -4,6 +4,7 @@ import { api } from '../api'
 
 const NAV = [
   { section: 'MAIN',    to: '/dashboard', icon: '📊', label: 'Dashboard' },
+  { section: null,      to: '/tasks',     icon: '✅', label: 'Tasks' },
   { section: null,      to: '/clients',   icon: '👥', label: 'Clients' },
   { section: null,      to: '/bookings',  icon: '📅', label: 'Bookings' },
   { section: 'FINANCE', to: '/invoices',  icon: '🧾', label: 'Invoices' },
