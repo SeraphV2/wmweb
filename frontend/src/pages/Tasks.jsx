@@ -48,11 +48,15 @@ export default function Tasks() {
   const [saving, setSaving] = useState(false)
   const [dragId, setDragId] = useState(null)
   const [dragOverStatus, setDragOverStatus] = useState(null)
-  const dragging = useRef(false)
+  // Counts in-flight mutations (pill edits, drags) so auto-refresh can't land
+  // between an optimistic update and its save and clobber it with stale data.
+  const pending = useRef(0)
+  function beginMutation() { pending.current += 1 }
+  function endMutation() { pending.current = Math.max(0, pending.current - 1) }
 
   const load = useCallback(() => {
-    if (dragging.current) return
-    api.getTasks(search).then(setRows).catch(e => toast(e.message, 'error'))
+    if (pending.current > 0) return
+    api.getTasks(search).then(rs => { if (pending.current === 0) setRows(rs) }).catch(e => toast(e.message, 'error'))
   }, [search])
 
   useEffect(() => { load() }, [load])
@@ -100,22 +104,28 @@ export default function Tasks() {
 
   function setStatus(t, status) {
     setRows(rs => rs.map(r => r.id === t.id ? { ...r, status } : r))
-    api.updateTaskStatus(t.id, status).catch(e => { toast(e.message, 'error'); load() })
+    beginMutation()
+    api.updateTaskStatus(t.id, status)
+      .catch(e => toast(e.message, 'error'))
+      .finally(() => { endMutation(); load() })
   }
 
   function setPriority(t, priority) {
     setRows(rs => rs.map(r => r.id === t.id ? { ...r, priority } : r))
-    api.updateTaskPriority(t.id, priority).catch(e => { toast(e.message, 'error'); load() })
+    beginMutation()
+    api.updateTaskPriority(t.id, priority)
+      .catch(e => toast(e.message, 'error'))
+      .finally(() => { endMutation(); load() })
   }
 
   function onCardDragStart(t) {
-    dragging.current = true
+    beginMutation()
     setDragId(t.id)
   }
   function onCardDragEnd() {
-    dragging.current = false
     setDragId(null)
     setDragOverStatus(null)
+    endMutation()
   }
   function onColumnDrop(e, status) {
     e.preventDefault()
