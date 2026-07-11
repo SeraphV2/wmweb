@@ -208,11 +208,16 @@ class Database:
                 assignee    VARCHAR(100) DEFAULT '',
                 due_date    DATE,
                 notes       TEXT,
+                position    INT DEFAULT 0,
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
         ]
         for stmt in stmts:
             self._ex(stmt)
+        try:
+            self._mc.execute("ALTER TABLE tasks ADD COLUMN position INT DEFAULT 0")
+        except Exception:
+            pass
         for k, v in SETTINGS_DEFAULTS.items():
             self._ex(
                 "INSERT IGNORE INTO settings (`key`, value) VALUES (%s, %s)", (k, v))
@@ -585,7 +590,7 @@ class Database:
         if search:
             q += " AND (title LIKE %s OR assignee LIKE %s OR group_name LIKE %s)"
             params.extend([f'%{search}%'] * 3)
-        q += " ORDER BY group_name, id"
+        q += " ORDER BY group_name, position, id"
         self._ex(q, params)
         return self._rows()
 
@@ -618,6 +623,12 @@ class Database:
 
     def update_task_priority(self, tid, priority):
         self._ex("UPDATE tasks SET priority=%s WHERE id=%s", (priority, tid))
+
+    def reorder_tasks(self, items):
+        for it in items:
+            self._ex(
+                "UPDATE tasks SET group_name=%s, position=%s WHERE id=%s",
+                (it['group_name'], it['position'], it['id']))
 
     def delete_task(self, tid):
         self._ex("DELETE FROM tasks WHERE id=%s", (tid,))

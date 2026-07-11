@@ -164,6 +164,14 @@ a { text-decoration: none; color: inherit; }
 .pill-select:hover { opacity: 1; transform: translateY(-1px); }
 .pill-select:focus { box-shadow: 0 0 0 3px rgba(245,158,11,.2); }
 
+/* ── Drag and drop (Tasks board) ──────────────────────────────────── */
+.drag-handle {
+  cursor: grab; color: var(--muted); text-align: center;
+  font-size: 14px; user-select: none;
+}
+.drag-handle:active { cursor: grabbing; }
+.tbl tr.drag-over td { box-shadow: inset 0 2px 0 0 var(--accent); }
+
 /* ── Modal (glass) ─────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(28,20,16,.4);

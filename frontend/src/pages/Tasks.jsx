@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
@@ -46,8 +46,12 @@ export default function Tasks() {
   const [editId, setEditId] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [dragId, setDragId] = useState(null)
+  const [dragOver, setDragOver] = useState(null) // { group, beforeId } | null
+  const dragging = useRef(false)
 
   const load = useCallback(() => {
+    if (dragging.current) return
     api.getTasks(search).then(setRows).catch(e => toast(e.message, 'error'))
   }, [search])
 
@@ -103,6 +107,59 @@ export default function Tasks() {
     api.updateTaskPriority(t.id, priority).catch(e => { toast(e.message, 'error'); load() })
   }
 
+  // Drag-and-drop: reorder within a group, or move to a different group.
+  // beforeId === null means "drop at the end of this group".
+  function moveTask(draggedId, targetGroup, beforeId) {
+    setRows(rs => {
+      const dragged = rs.find(r => r.id === draggedId)
+      if (!dragged) return rs
+      const rest = rs.filter(r => r.id !== draggedId)
+      const moved = { ...dragged, group_name: targetGroup }
+
+      let insertAt = rest.length
+      if (beforeId != null) {
+        const idx = rest.findIndex(r => r.id === beforeId)
+        if (idx !== -1) insertAt = idx
+      } else {
+        let lastIdx = -1
+        rest.forEach((r, i) => { if ((r.group_name || 'General') === targetGroup) lastIdx = i })
+        insertAt = lastIdx === -1 ? rest.length : lastIdx + 1
+      }
+
+      const next = [...rest.slice(0, insertAt), moved, ...rest.slice(insertAt)]
+
+      const counters = {}
+      const items = next.map(r => {
+        const g = r.group_name || 'General'
+        counters[g] = (counters[g] ?? -1) + 1
+        return { id: r.id, group_name: g, position: counters[g] }
+      })
+      api.reorderTasks(items).catch(e => { toast(e.message, 'error'); load() })
+
+      return next
+    })
+  }
+
+  function onRowDragStart(t) {
+    dragging.current = true
+    setDragId(t.id)
+  }
+  function onRowDragEnd() {
+    dragging.current = false
+    setDragId(null)
+    setDragOver(null)
+  }
+  function onRowDrop(e, targetGroup, targetId) {
+    e.preventDefault()
+    if (dragId != null && dragId !== targetId) moveTask(dragId, targetGroup, targetId)
+    onRowDragEnd()
+  }
+  function onZoneDrop(e, targetGroup) {
+    e.preventDefault()
+    if (dragId != null) moveTask(dragId, targetGroup, null)
+    onRowDragEnd()
+  }
+
   function F(key) {
     return <input className="input" value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} />
   }
@@ -135,11 +192,27 @@ export default function Tasks() {
             <div className="tbl-wrap">
               <table className="tbl">
                 <thead>
-                  <tr><th>Title</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due Date</th><th></th></tr>
+                  <tr><th style={{ width: 28 }}></th><th>Title</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Due Date</th><th></th></tr>
                 </thead>
                 <tbody>
                   {items.map(t => (
-                    <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => openEdit(t)}>
+                    <tr
+                      key={t.id}
+                      className={dragOver?.beforeId === t.id ? 'drag-over' : ''}
+                      style={{ cursor: 'pointer', opacity: dragId === t.id ? 0.35 : 1 }}
+                      onClick={() => openEdit(t)}
+                      onDragOver={e => { e.preventDefault(); setDragOver({ group: groupName, beforeId: t.id }) }}
+                      onDragLeave={() => setDragOver(dv => (dv?.beforeId === t.id ? null : dv))}
+                      onDrop={e => onRowDrop(e, groupName, t.id)}
+                    >
+                      <td
+                        className="drag-handle"
+                        draggable
+                        onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; onRowDragStart(t) }}
+                        onDragEnd={onRowDragEnd}
+                        onClick={e => e.stopPropagation()}
+                        title="Drag to reorder"
+                      >⠿</td>
                       <td style={{ fontWeight: 600 }}>{t.title}</td>
                       <td><Pill value={t.status} options={STATUSES} colors={STATUS_COLORS} onChange={v => setStatus(t, v)} /></td>
                       <td><Pill value={t.priority} options={PRIORITIES} colors={PRIORITY_COLORS} onChange={v => setPriority(t, v)} /></td>
@@ -150,6 +223,14 @@ export default function Tasks() {
                       </td>
                     </tr>
                   ))}
+                  <tr
+                    className={dragOver?.group === groupName && dragOver?.beforeId == null ? 'drag-over' : ''}
+                    onDragOver={e => { e.preventDefault(); setDragOver({ group: groupName, beforeId: null }) }}
+                    onDragLeave={() => setDragOver(dv => (dv?.group === groupName && dv?.beforeId == null ? null : dv))}
+                    onDrop={e => onZoneDrop(e, groupName)}
+                  >
+                    <td colSpan={7} style={{ height: 12, padding: 0 }} />
+                  </tr>
                 </tbody>
               </table>
             </div>

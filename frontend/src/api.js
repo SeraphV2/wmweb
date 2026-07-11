@@ -110,6 +110,7 @@ export const api = {
   updateTask:     (id, data) => req('PUT', `/api/tasks/${id}`, data),
   updateTaskStatus:   (id, status) => req('PATCH', `/api/tasks/${id}/status`, { status }),
   updateTaskPriority: (id, priority) => req('PATCH', `/api/tasks/${id}/priority`, { priority }),
+  reorderTasks:   (items) => req('PATCH', '/api/tasks/reorder', { items }),
   deleteTask:     (id) => req('DELETE', `/api/tasks/${id}`),
 
   // Reports

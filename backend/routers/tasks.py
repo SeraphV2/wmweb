@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from database import Database
 from deps import get_db
 
@@ -28,6 +28,16 @@ class PriorityBody(BaseModel):
     priority: str
 
 
+class ReorderItem(BaseModel):
+    id: int
+    group_name: str
+    position: int
+
+
+class ReorderBody(BaseModel):
+    items: List[ReorderItem]
+
+
 @router.get("/")
 def list_tasks(search: str = '', db: Database = Depends(get_db)):
     return db.get_tasks(search=search)
@@ -47,6 +57,12 @@ def create_task(body: TaskBody, db: Database = Depends(get_db)):
 @router.put("/{tid}")
 def update_task(tid: int, body: TaskBody, db: Database = Depends(get_db)):
     db.update_task(tid, body.model_dump())
+    return {"ok": True}
+
+
+@router.patch("/reorder")
+def reorder(body: ReorderBody, db: Database = Depends(get_db)):
+    db.reorder_tasks([i.model_dump() for i in body.items])
     return {"ok": True}
 
 
