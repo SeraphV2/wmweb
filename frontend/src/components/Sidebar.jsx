@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import NotificationBell from './NotificationBell'
 
 const NAV = [
   { section: 'MAIN',    to: '/dashboard', icon: '📊', label: 'Dashboard' },
@@ -55,6 +56,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', lineHeight: 1.2 }}>{company}</div>
           <div style={{ fontSize: 9, color: 'var(--muted)' }}>Business Suite</div>
         </div>
+        <NotificationBell />
         <button onClick={onClose} className="close-btn sidebar-close-only" aria-label="Close menu">×</button>
       </div>
 

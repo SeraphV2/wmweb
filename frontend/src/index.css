@@ -222,6 +222,40 @@ a { text-decoration: none; color: inherit; }
   .calendar-dow-cell { font-size: 9px; }
 }
 
+/* ── Notification bell ────────────────────────────────────────────── */
+.notif-bell-wrap { position: relative; flex-shrink: 0; }
+.notif-bell-btn {
+  position: relative; background: var(--input); border: none; border-radius: 10px;
+  width: 34px; height: 34px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s ease, transform .15s ease;
+}
+.notif-bell-btn:hover { background: var(--nav-active); transform: translateY(-1px); }
+.notif-badge {
+  position: absolute; top: -3px; right: -3px; background: #dc2626; color: #fff;
+  font-size: 9px; font-weight: 700; border-radius: 10px; min-width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center; padding: 0 4px;
+  border: 2px solid var(--sidebar);
+}
+.notif-panel {
+  position: absolute; top: calc(100% + 8px); left: 0; width: 290px; max-height: 380px;
+  overflow-y: auto; background: rgba(255,255,255,.97);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md); z-index: 700; animation: modalIn .18s ease;
+}
+.notif-panel-header {
+  padding: 10px 14px; font-size: 12px; font-weight: 700; color: var(--muted);
+  border-bottom: 1px solid var(--border-soft); text-transform: uppercase; letter-spacing: .04em;
+}
+.notif-item {
+  padding: 10px 14px; border-bottom: 1px solid rgba(240,234,216,.7);
+  cursor: pointer; transition: background .12s ease;
+}
+.notif-item:hover { background: var(--nav-hover); }
+.notif-item:last-child { border-bottom: none; }
+.notif-empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
 /* ── Modal (glass) ─────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; background: rgba(28,20,16,.4);
