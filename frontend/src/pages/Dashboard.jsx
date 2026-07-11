@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null)
   const [upcoming, setUpcoming] = useState([])
   const [recent, setRecent] = useState([])
-  const [taskCounts, setTaskCounts] = useState({})
+  const [taskCounts, setTaskCounts] = useState(null)
   const [dueSoon, setDueSoon] = useState([])
   const navigate = useNavigate()
   const todayStr = new Date().toISOString().slice(0, 10)
@@ -141,7 +141,7 @@ export default function Dashboard() {
                     cursor: 'pointer', flex: '1 1 100px', minWidth: 100,
                     background: c.bg, color: c.color, borderRadius: 12, padding: '12px 14px', textAlign: 'center',
                   }}>
-                    <div style={{ fontSize: 22, fontWeight: 700 }}>{taskCounts[s] ?? 0}</div>
+                    <div style={{ fontSize: 22, fontWeight: 700 }}>{taskCounts ? (taskCounts[s] ?? 0) : '—'}</div>
                     <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2 }}>{s}</div>
                   </div>
                 )
