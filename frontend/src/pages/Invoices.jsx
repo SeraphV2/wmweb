@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const STATUSES = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled']
 const BADGE = { Paid: 'badge-green', Draft: 'badge-gray', Sent: 'badge-blue', Overdue: 'badge-red', Cancelled: 'badge-gray' }
@@ -29,6 +30,7 @@ export default function Invoices() {
   }, [search, statusFilter])
 
   useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
   useEffect(() => {
     api.getClients().then(setClients).catch(() => {})
     api.getProjects().then(setProjects).catch(() => {})

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const STATUS_BADGE = {
   Paid:      'badge-green',
@@ -29,11 +30,14 @@ export default function Dashboard() {
   const [recent, setRecent] = useState([])
   const navigate = useNavigate()
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([api.dashStats(), api.dashUpcoming(), api.dashRecent()])
       .then(([s, u, r]) => { setStats(s); setUpcoming(u); setRecent(r) })
       .catch(console.error)
   }, [])
+
+  useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
 
   return (
     <div className="page">

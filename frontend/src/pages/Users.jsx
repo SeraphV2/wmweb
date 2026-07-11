@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const ROLES = ['admin', 'staff', 'viewer']
 const ROLE_INFO = {
@@ -23,10 +24,11 @@ export default function Users() {
   const [editId, setEditId] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  function load() {
+  const load = useCallback(() => {
     api.getUsers().then(setRows).catch(e => toast(e.message, 'error'))
-  }
-  useEffect(load, [])
+  }, [])
+  useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
 
   function openNew() {
     setForm(EMPTY_FORM)

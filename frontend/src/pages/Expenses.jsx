@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer', 'PayPal', 'Other']
 const EMPTY = { project_id: '', category: '', description: '', amount: '', date: '', payment_method: '', notes: '' }
@@ -22,6 +23,7 @@ export default function Expenses() {
   }, [search, catFilter])
 
   useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
   useEffect(() => {
     api.getProjects().then(setProjects).catch(() => {})
     api.expenseCategories().then(setCats).catch(() => {})

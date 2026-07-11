@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged']
 const EMPTY = { name: '', category: '', brand: '', model_name: '', serial_number: '', purchase_date: '', purchase_price: '', condition: 'Excellent', insured: false, insurance_value: '', notes: '' }
@@ -21,6 +22,7 @@ export default function Equipment() {
   }, [search, catFilter])
 
   useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
   useEffect(() => { api.equipCategories().then(setCats).catch(() => {}) }, [])
 
   function openNew() { setForm(EMPTY); setModal('new') }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const EMPTY_FORM = { name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', notes: '' }
 
@@ -19,6 +20,7 @@ export default function Clients() {
   }, [search])
 
   useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
 
   function openNew() { setForm(EMPTY_FORM); setModal('new') }
   function openEdit() {

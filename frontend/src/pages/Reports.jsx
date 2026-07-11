@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
 import { api } from '../api'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const COLORS = ['#f59e0b','#22c55e','#3b82f6','#ef4444','#f97316','#8b5cf6','#ec4899','#14b8a6']
@@ -16,7 +17,7 @@ export default function Reports() {
   const [monthly, setMonthly] = useState([])
   const [catData, setCatData] = useState([])
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Promise.all([
       api.reportSummary(selYear),
       api.monthlyRevenue(selYear),
@@ -33,6 +34,9 @@ export default function Reports() {
       setCatData(cat.filter(r => r.category).map(r => ({ name: r.category, value: Number(r.total) })))
     }).catch(e => toast(e.message, 'error'))
   }, [selYear])
+
+  useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
 
   return (
     <div className="page">

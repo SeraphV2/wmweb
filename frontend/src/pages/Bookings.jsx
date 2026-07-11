@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
+import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const STATUSES = ['Inquiry', 'Confirmed', 'In Progress', 'Completed', 'Cancelled']
 const TYPES = ['Photography', 'Videography', 'Both', 'Other']
@@ -24,6 +25,7 @@ export default function Bookings() {
   }, [search, statusFilter])
 
   useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
   useEffect(() => { api.getClients().then(setClients).catch(() => {}) }, [])
 
   function openNew() { setForm(EMPTY); setModal('new') }
