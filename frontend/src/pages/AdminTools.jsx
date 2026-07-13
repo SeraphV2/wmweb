@@ -30,6 +30,7 @@ export default function AdminTools() {
   if (role !== 'admin') return <Navigate to="/dashboard" replace />
 
   const [exporting, setExporting] = useState(false)
+  const [exportingSql, setExportingSql] = useState(false)
   const [health, setHealth] = useState(null)
 
   const loadHealth = useCallback(() => {
@@ -55,6 +56,26 @@ export default function AdminTools() {
       toast(err.message, 'error')
     } finally {
       setExporting(false)
+    }
+  }
+
+  async function exportSql() {
+    setExportingSql(true)
+    try {
+      const blob = await api.exportSql()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `waffle-media-backup-${new Date().toISOString().slice(0, 10)}.sql`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast('SQL backup downloaded')
+    } catch (err) {
+      toast(err.message, 'error')
+    } finally {
+      setExportingSql(false)
     }
   }
 
@@ -103,6 +124,22 @@ export default function AdminTools() {
             </p>
             <button className="btn btn-primary" onClick={exportAll} disabled={exporting}>
               {exporting ? 'Exporting…' : '⬇️ Export All Data'}
+            </button>
+          </div>
+
+          <div className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 8 }}>Data Migration</h3>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
+              Downloads a full SQL backup of every table (including relationships like invoice line items and payment history) as a single <code>.sql</code> file — the format to use if you ever need to move to a different database.
+            </p>
+            <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>
+              To migrate: point this app at the new, empty database and let it start up once (it creates the tables automatically), then run this file against that database with HeidiSQL, the Aiven console, or the <code>mysql</code> CLI to restore everything.
+            </p>
+            <p style={{ fontSize: 11, color: 'var(--red)', marginBottom: 16 }}>
+              ⚠️ Contains everything in the database, including user password hashes — store it somewhere secure and don't share it.
+            </p>
+            <button className="btn btn-primary" onClick={exportSql} disabled={exportingSql}>
+              {exportingSql ? 'Exporting…' : '⬇️ Export Full SQL Backup'}
             </button>
           </div>
         </div>

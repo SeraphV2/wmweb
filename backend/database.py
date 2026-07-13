@@ -826,6 +826,40 @@ class Database:
             "GROUP BY username ORDER BY c DESC LIMIT %s", (limit,))
         return self._rows()
 
+    # ── Full database export (for migrating to another database) ──────────────
+    # Data-only dump - assumes the target database already has the schema
+    # (the app creates it automatically the first time it connects to a new,
+    # empty database), so this only needs to carry the rows over.
+
+    def export_sql_dump(self):
+        import datetime as dt
+        tables = [
+            'settings', 'users', 'clients', 'projects', 'invoices', 'invoice_items',
+            'payments', 'expenses', 'equipment', 'equipment_payments', 'tasks', 'activity_log',
+        ]
+        lines = [
+            '-- Waffle Media Tool database export',
+            f'-- Generated {dt.datetime.utcnow().isoformat()}Z',
+            '-- Data only: run this against a database the app has already started up',
+            '-- against once (so the tables exist), e.g. via HeidiSQL or the mysql CLI.',
+            'SET FOREIGN_KEY_CHECKS=0;',
+            '',
+        ]
+        for t in tables:
+            self._ex(f"SELECT * FROM {t}")
+            rows = self._mc.fetchall()
+            if not rows:
+                continue
+            cols = list(rows[0].keys())
+            col_list = ', '.join(f'`{c}`' for c in cols)
+            lines.append(f'-- Table: {t} ({len(rows)} rows)')
+            for row in rows:
+                vals = ', '.join(self._mysql.escape(row[c]) for c in cols)
+                lines.append(f'INSERT INTO `{t}` ({col_list}) VALUES ({vals});')
+            lines.append('')
+        lines.append('SET FOREIGN_KEY_CHECKS=1;')
+        return '\n'.join(lines)
+
     def close(self):
         if self._mysql:
             try:

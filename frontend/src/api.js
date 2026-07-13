@@ -66,6 +66,12 @@ export const api = {
 
   // Admin overview (admin only)
   getAdminHealth: () => req('GET', '/api/admin/health'),
+  exportSql: async () => {
+    const t = token()
+    const res = await fetch(`${BASE}/api/admin/export-sql`, { headers: t ? { Authorization: `Bearer ${t}` } : {} })
+    if (!res.ok) throw new Error('Export failed')
+    return res.blob()
+  },
 
   // Dashboard
   dashStats:      () => req('GET', '/api/dashboard/stats'),
