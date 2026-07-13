@@ -6,6 +6,7 @@ import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
 import { EQUIPMENT_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
+import { MODELS_BY_BRAND } from '../lib/equipmentModels'
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged']
 const DEFAULT_CATEGORIES = [
@@ -30,6 +31,7 @@ export default function Equipment() {
   const [rows, setRows] = useState([])
   const [cats, setCats] = useState([])
   const [brands, setBrands] = useState([])
+  const [models, setModels] = useState([])
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('')
   const [selected, setSelected] = useState(null)
@@ -47,6 +49,7 @@ export default function Equipment() {
   useAutoRefresh(load)
   useEffect(() => { api.equipCategories().then(setCats).catch(() => {}) }, [])
   useEffect(() => { api.equipBrands().then(setBrands).catch(() => {}) }, [])
+  useEffect(() => { api.equipModels().then(setModels).catch(() => {}) }, [])
 
   useEffect(() => {
     if (selected?.financed) {
@@ -92,6 +95,7 @@ export default function Equipment() {
       setModal(null); setSelected(null); load()
       api.equipCategories().then(setCats).catch(() => {})
       api.equipBrands().then(setBrands).catch(() => {})
+      api.equipModels().then(setModels).catch(() => {})
     } catch (e) { toast(e.message, 'error') }
     finally { setSaving(false) }
   }
@@ -119,6 +123,7 @@ export default function Equipment() {
   const totalValue = rows.reduce((s, r) => s + Number(r.purchase_price || 0), 0)
   const categoryOptions = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort((a, b) => a.localeCompare(b))
   const brandOptions = [...new Set([...DEFAULT_BRANDS, ...brands])].sort((a, b) => a.localeCompare(b))
+  const modelOptions = [...new Set([...(MODELS_BY_BRAND[form.brand] || []), ...models])].sort((a, b) => a.localeCompare(b))
 
   return (
     <div className="page">
@@ -211,7 +216,7 @@ export default function Equipment() {
           <div className="grid-2">
             <div className="field">
               <label>Model</label>
-              <input className="input" value={form.model_name} onChange={e => setForm(f => ({ ...f, model_name: e.target.value }))} />
+              <Combobox value={form.model_name} onChange={v => setForm(f => ({ ...f, model_name: v }))} options={modelOptions} placeholder={form.brand ? `Choose or type a ${form.brand} model` : 'Choose a brand first, or type a model'} />
             </div>
             <div className="field">
               <label>Serial Number</label>

@@ -46,6 +46,11 @@ def brands(db: Database = Depends(get_db)):
     return db.get_equipment_brands()
 
 
+@router.get("/models")
+def models(db: Database = Depends(get_db)):
+    return db.get_equipment_models()
+
+
 @router.get("/{eid}")
 def get_equipment_item(eid: int, db: Database = Depends(get_db)):
     item = db.get_equipment_item(eid)

@@ -113,6 +113,7 @@ export const api = {
     req('GET', `/api/equipment/?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`),
   equipCategories: () => req('GET', '/api/equipment/categories'),
   equipBrands: () => req('GET', '/api/equipment/brands'),
+  equipModels: () => req('GET', '/api/equipment/models'),
   getEquipmentItem: (id) => req('GET', `/api/equipment/${id}`),
   createEquipment: (data) => req('POST', '/api/equipment/', data),
   updateEquipment: (id, data) => req('PUT', `/api/equipment/${id}`, data),
