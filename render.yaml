@@ -20,6 +20,10 @@ services:
         sync: false
       - key: DB_NAME
         sync: false
+      - key: WIX_API_KEY
+        sync: false
+      - key: WIX_SITE_ID
+        sync: false
 
   - type: web
     runtime: static

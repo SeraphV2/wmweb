@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 from database import Database
 from deps import get_db, get_current_user
+import wix
 
 router = APIRouter()
 
@@ -36,16 +37,18 @@ def get_client(cid: int, db: Database = Depends(get_db)):
 
 
 @router.post("/")
-def create_client(body: ClientBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+def create_client(body: ClientBody, background_tasks: BackgroundTasks, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     cid = db.add_client(body.model_dump())
     db.log_activity(current['username'], 'created', 'client', cid, body.name)
+    background_tasks.add_task(wix.sync_contact, body.model_dump())
     return {"id": cid}
 
 
 @router.put("/{cid}")
-def update_client(cid: int, body: ClientBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+def update_client(cid: int, body: ClientBody, background_tasks: BackgroundTasks, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_client(cid, body.model_dump())
     db.log_activity(current['username'], 'updated', 'client', cid, body.name)
+    background_tasks.add_task(wix.sync_contact, body.model_dump())
     return {"ok": True}
 
 
