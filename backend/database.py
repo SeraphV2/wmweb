@@ -115,13 +115,15 @@ class Database:
             )""",
             """CREATE TABLE IF NOT EXISTS clients (
                 id         INT AUTO_INCREMENT PRIMARY KEY,
-                name       VARCHAR(255) NOT NULL,
+                first_name VARCHAR(255) NOT NULL DEFAULT '',
+                last_name  VARCHAR(255) DEFAULT '',
                 email      VARCHAR(255),
                 phone      VARCHAR(50),
                 address    VARCHAR(255),
                 city       VARCHAR(100),
                 state      VARCHAR(100),
                 zip        VARCHAR(20),
+                country    VARCHAR(100) DEFAULT '',
                 notes      TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
@@ -243,11 +245,29 @@ class Database:
             "ALTER TABLE users ADD COLUMN last_login TIMESTAMP NULL DEFAULT NULL",
             "ALTER TABLE equipment ADD COLUMN financed TINYINT(1) DEFAULT 0",
             "ALTER TABLE equipment ADD COLUMN finance_amount DECIMAL(10,2) DEFAULT 0",
+            "ALTER TABLE clients ADD COLUMN first_name VARCHAR(255) NOT NULL DEFAULT ''",
+            "ALTER TABLE clients ADD COLUMN last_name VARCHAR(255) DEFAULT ''",
+            "ALTER TABLE clients ADD COLUMN country VARCHAR(100) DEFAULT ''",
+            # The old `name` column (pre first_name/last_name) is kept around rather
+            # than dropped, but it's still NOT NULL with no default from its original
+            # definition - relax that so inserts that no longer set it don't fail.
+            "ALTER TABLE clients MODIFY COLUMN name VARCHAR(255) NULL DEFAULT ''",
         ]:
             try:
                 self._mc.execute(stmt)
             except Exception:
                 pass
+        # One-time backfill: split any pre-existing single `name` column
+        # (from before clients had first_name/last_name) into the new fields.
+        try:
+            self._mc.execute(
+                "UPDATE clients SET "
+                "first_name = TRIM(SUBSTRING_INDEX(name, ' ', 1)), "
+                "last_name = TRIM(SUBSTRING(name, LENGTH(SUBSTRING_INDEX(name, ' ', 1)) + 1)) "
+                "WHERE first_name = '' AND name IS NOT NULL AND name != ''"
+            )
+        except Exception:
+            pass
         for k, v in SETTINGS_DEFAULTS.items():
             self._ex(
                 "INSERT IGNORE INTO settings (`key`, value) VALUES (%s, %s)", (k, v))
@@ -326,33 +346,41 @@ class Database:
     def get_clients(self, search=''):
         if search:
             self._ex(
-                "SELECT * FROM clients "
-                "WHERE name LIKE %s OR email LIKE %s OR phone LIKE %s ORDER BY name",
-                (f'%{search}%',) * 3)
+                "SELECT id,first_name,last_name,email,phone,address,city,state,zip,country,notes,created_at, "
+                "TRIM(CONCAT(first_name,' ',last_name)) AS name FROM clients "
+                "WHERE first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR phone LIKE %s "
+                "ORDER BY first_name, last_name",
+                (f'%{search}%',) * 4)
         else:
-            self._ex("SELECT * FROM clients ORDER BY name")
+            self._ex(
+                "SELECT id,first_name,last_name,email,phone,address,city,state,zip,country,notes,created_at, "
+                "TRIM(CONCAT(first_name,' ',last_name)) AS name FROM clients "
+                "ORDER BY first_name, last_name")
         return self._rows()
 
     def get_client(self, cid):
-        self._ex("SELECT * FROM clients WHERE id=%s", (cid,))
+        self._ex(
+            "SELECT id,first_name,last_name,email,phone,address,city,state,zip,country,notes,created_at, "
+            "TRIM(CONCAT(first_name,' ',last_name)) AS name FROM clients WHERE id=%s",
+            (cid,))
         return self._row()
 
     def add_client(self, data):
         self._ex(
-            "INSERT INTO clients (name,email,phone,address,city,state,zip,notes) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
-            (data['name'], data.get('email',''), data.get('phone',''),
+            "INSERT INTO clients (first_name,last_name,email,phone,address,city,state,zip,country,notes) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (data['first_name'], data.get('last_name',''), data.get('email',''), data.get('phone',''),
              data.get('address',''), data.get('city',''), data.get('state',''),
-             data.get('zip',''), data.get('notes','')))
+             data.get('zip',''), data.get('country',''), data.get('notes','')))
         return self._mc.lastrowid
 
     def update_client(self, cid, data):
         self._ex(
-            "UPDATE clients SET name=%s,email=%s,phone=%s,address=%s,"
-            "city=%s,state=%s,zip=%s,notes=%s WHERE id=%s",
-            (data['name'], data.get('email',''), data.get('phone',''),
+            "UPDATE clients SET first_name=%s,last_name=%s,email=%s,phone=%s,address=%s,"
+            "city=%s,state=%s,zip=%s,country=%s,notes=%s WHERE id=%s",
+            (data['first_name'], data.get('last_name',''), data.get('email',''), data.get('phone',''),
              data.get('address',''), data.get('city',''), data.get('state',''),
-             data.get('zip',''), data.get('notes',''), cid))
+             data.get('zip',''), data.get('country',''), data.get('notes',''), cid))
 
     def delete_client(self, cid):
         self._ex("DELETE FROM clients WHERE id=%s", (cid,))
@@ -364,12 +392,12 @@ class Database:
     # ── Projects ──────────────────────────────────────────────────────────────
 
     def get_projects(self, search='', status=''):
-        q = ("SELECT p.*, c.name AS client_name FROM projects p "
+        q = ("SELECT p.*, TRIM(CONCAT(c.first_name,' ',c.last_name)) AS client_name FROM projects p "
              "LEFT JOIN clients c ON p.client_id=c.id WHERE 1=1")
         params = []
         if search:
-            q += " AND (p.title LIKE %s OR c.name LIKE %s OR p.location LIKE %s)"
-            params.extend([f'%{search}%'] * 3)
+            q += " AND (p.title LIKE %s OR c.first_name LIKE %s OR c.last_name LIKE %s OR p.location LIKE %s)"
+            params.extend([f'%{search}%'] * 4)
         if status:
             q += " AND p.status=%s"
             params.append(status)
@@ -379,7 +407,7 @@ class Database:
 
     def get_project(self, pid):
         self._ex(
-            "SELECT p.*, c.name AS client_name FROM projects p "
+            "SELECT p.*, TRIM(CONCAT(c.first_name,' ',c.last_name)) AS client_name FROM projects p "
             "LEFT JOIN clients c ON p.client_id=c.id WHERE p.id=%s", (pid,))
         return self._row()
 
@@ -410,7 +438,7 @@ class Database:
 
     def get_upcoming_projects(self, days=30):
         self._ex(
-            "SELECT p.*, c.name AS client_name FROM projects p "
+            "SELECT p.*, TRIM(CONCAT(c.first_name,' ',c.last_name)) AS client_name FROM projects p "
             "LEFT JOIN clients c ON p.client_id=c.id "
             "WHERE p.date >= CURDATE() "
             "AND p.date <= DATE_ADD(CURDATE(), INTERVAL %s DAY) "
@@ -432,13 +460,13 @@ class Database:
         return f"{prefix}-{str(cnt + 1).zfill(4)}"
 
     def get_invoices(self, search='', status=''):
-        q = ("SELECT i.*, c.name AS client_name, p.title AS project_title "
+        q = ("SELECT i.*, TRIM(CONCAT(c.first_name,' ',c.last_name)) AS client_name, p.title AS project_title "
              "FROM invoices i LEFT JOIN clients c ON i.client_id=c.id "
              "LEFT JOIN projects p ON i.project_id=p.id WHERE 1=1")
         params = []
         if search:
-            q += " AND (i.invoice_number LIKE %s OR c.name LIKE %s)"
-            params.extend([f'%{search}%'] * 2)
+            q += " AND (i.invoice_number LIKE %s OR c.first_name LIKE %s OR c.last_name LIKE %s)"
+            params.extend([f'%{search}%'] * 3)
         if status:
             q += " AND i.status=%s"
             params.append(status)
@@ -448,9 +476,10 @@ class Database:
 
     def get_invoice(self, iid):
         self._ex("""
-            SELECT i.*, c.name AS client_name, c.email AS client_email,
+            SELECT i.*, TRIM(CONCAT(c.first_name,' ',c.last_name)) AS client_name, c.email AS client_email,
                 c.phone AS client_phone, c.address AS client_address,
                 c.city AS client_city, c.state AS client_state, c.zip AS client_zip,
+                c.country AS client_country,
                 p.title AS project_title, p.date AS project_date
             FROM invoices i
             LEFT JOIN clients c ON i.client_id=c.id
@@ -508,7 +537,7 @@ class Database:
 
     def get_recent_invoices(self, limit=10):
         self._ex(
-            "SELECT i.*, c.name AS client_name FROM invoices i "
+            "SELECT i.*, TRIM(CONCAT(c.first_name,' ',c.last_name)) AS client_name FROM invoices i "
             "LEFT JOIN clients c ON i.client_id=c.id "
             "ORDER BY i.created_at DESC LIMIT %s", (limit,))
         return self._rows()

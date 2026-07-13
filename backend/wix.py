@@ -8,7 +8,11 @@ NOT YET TESTED against a real Wix site (no live API key was available while
 building this) - the request/response shapes follow Wix's documented REST
 API, but should be verified against a real account before relying on it.
 Check server logs after the first sync attempt; field names or the revision
-handling on update may need small adjustments.
+handling on update may need small adjustments. The address block is the
+least certain part - name/email/phone/subdivision/postalCode/country match
+Wix's documented Contacts schema, but the exact streetAddress shape was
+confirmed from Wix's eCommerce/Locations APIs (which share the same address
+object convention), not the Contacts API specifically.
 """
 import os
 import requests
@@ -31,15 +35,29 @@ def _headers():
 
 
 def _contact_info(client):
-    name = (client.get('name') or '').strip()
-    first, _, last = name.partition(' ')
     info = {}
+    first, last = client.get('first_name', ''), client.get('last_name', '')
     if first or last:
         info['name'] = {k: v for k, v in {'first': first, 'last': last}.items() if v}
     if client.get('email'):
         info['emails'] = {'items': [{'email': client['email'], 'tag': 'MAIN'}]}
     if client.get('phone'):
         info['phones'] = {'items': [{'phone': client['phone'], 'tag': 'MAIN'}]}
+
+    addr = {}
+    if client.get('address'):
+        addr['streetAddress'] = {'name': client['address']}
+    if client.get('city'):
+        addr['city'] = client['city']
+    if client.get('state'):
+        addr['subdivision'] = client['state']
+    if client.get('zip'):
+        addr['postalCode'] = client['zip']
+    if client.get('country'):
+        addr['country'] = client['country']
+    if addr:
+        info['addresses'] = {'items': [{'address': addr, 'tag': 'HOME'}]}
+
     return info
 
 

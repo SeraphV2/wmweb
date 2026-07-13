@@ -6,7 +6,7 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
 import { CLIENT_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
-const EMPTY_FORM = { name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', notes: '' }
+const EMPTY_FORM = { first_name: '', last_name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', country: '', notes: '' }
 
 export default function Clients() {
   const [rows, setRows] = useState([])
@@ -29,16 +29,16 @@ export default function Clients() {
   function openEdit() {
     if (!selected) return
     setForm({
-      name: selected.name || '', email: selected.email || '',
-      phone: selected.phone || '', address: selected.address || '',
+      first_name: selected.first_name || '', last_name: selected.last_name || '',
+      email: selected.email || '', phone: selected.phone || '', address: selected.address || '',
       city: selected.city || '', state: selected.state || '',
-      zip: selected.zip || '', notes: selected.notes || '',
+      zip: selected.zip || '', country: selected.country || '', notes: selected.notes || '',
     })
     setModal('edit')
   }
 
   async function save() {
-    if (!form.name.trim()) { toast('Name is required', 'error'); return }
+    if (!form.first_name.trim()) { toast('First name is required', 'error'); return }
     setSaving(true)
     try {
       if (modal === 'edit') {
@@ -144,7 +144,10 @@ export default function Clients() {
             </button>
           </>}
         >
-          <div className="field"><label>Full Name *</label>{F('name')}</div>
+          <div className="grid-2">
+            <div className="field"><label>First Name *</label>{F('first_name')}</div>
+            <div className="field"><label>Last Name</label>{F('last_name')}</div>
+          </div>
           <div className="grid-2">
             <div className="field"><label>Email</label>{F('email')}</div>
             <div className="field"><label>Phone</label>{F('phone')}</div>
@@ -155,6 +158,7 @@ export default function Clients() {
             <div className="field"><label>State</label>{F('state')}</div>
             <div className="field"><label>ZIP</label>{F('zip')}</div>
           </div>
+          <div className="field"><label>Country</label>{F('country')}</div>
           <div className="field">
             <label>Notes</label>
             <textarea className="input" rows={3} value={form.notes}

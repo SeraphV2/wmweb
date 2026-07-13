@@ -9,13 +9,15 @@ router = APIRouter()
 
 
 class ClientBody(BaseModel):
-    name: str
+    first_name: str
+    last_name: str = ''
     email: str = ''
     phone: str = ''
     address: str = ''
     city: str = ''
     state: str = ''
     zip: str = ''
+    country: str = ''
     notes: str = ''
 
 
@@ -39,7 +41,8 @@ def get_client(cid: int, db: Database = Depends(get_db)):
 @router.post("/")
 def create_client(body: ClientBody, background_tasks: BackgroundTasks, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     cid = db.add_client(body.model_dump())
-    db.log_activity(current['username'], 'created', 'client', cid, body.name)
+    full_name = f"{body.first_name} {body.last_name}".strip()
+    db.log_activity(current['username'], 'created', 'client', cid, full_name)
     background_tasks.add_task(wix.sync_contact, body.model_dump())
     return {"id": cid}
 
@@ -47,7 +50,8 @@ def create_client(body: ClientBody, background_tasks: BackgroundTasks, current: 
 @router.put("/{cid}")
 def update_client(cid: int, body: ClientBody, background_tasks: BackgroundTasks, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_client(cid, body.model_dump())
-    db.log_activity(current['username'], 'updated', 'client', cid, body.name)
+    full_name = f"{body.first_name} {body.last_name}".strip()
+    db.log_activity(current['username'], 'updated', 'client', cid, full_name)
     background_tasks.add_task(wix.sync_contact, body.model_dump())
     return {"ok": True}
 

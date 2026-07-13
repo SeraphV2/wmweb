@@ -1,11 +1,13 @@
 export const CLIENT_COLUMNS = [
-  { label: 'Name', value: 'name' },
+  { label: 'First Name', value: 'first_name' },
+  { label: 'Last Name', value: 'last_name' },
   { label: 'Email', value: 'email' },
   { label: 'Phone', value: 'phone' },
   { label: 'Address', value: 'address' },
   { label: 'City', value: 'city' },
   { label: 'State', value: 'state' },
   { label: 'ZIP', value: 'zip' },
+  { label: 'Country', value: 'country' },
   { label: 'Projects', value: 'project_count' },
   { label: 'Notes', value: 'notes' },
 ]
