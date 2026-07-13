@@ -631,6 +631,12 @@ class Database:
             "WHERE category IS NOT NULL ORDER BY category")
         return [row['category'] for row in self._rows()]
 
+    def get_equipment_brands(self):
+        self._ex(
+            "SELECT DISTINCT brand FROM equipment "
+            "WHERE brand IS NOT NULL AND brand != '' ORDER BY brand")
+        return [row['brand'] for row in self._rows()]
+
     # ── Equipment payments ───────────────────────────────────────────────────
 
     def get_equipment_payments(self, eid):

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
+import Combobox from '../components/Combobox'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
@@ -12,6 +13,12 @@ const DEFAULT_CATEGORIES = [
   'Memory Card', 'Battery', 'Bag / Case', 'Monitor', 'Backdrop', 'Computer / Editing',
   'Software / License', 'Accessories', 'Other',
 ]
+const DEFAULT_BRANDS = [
+  'Canon', 'Nikon', 'Sony', 'Fujifilm', 'Panasonic', 'Sigma', 'Tamron',
+  'DJI', 'GoPro', 'Blackmagic Design', 'RED', 'ARRI',
+  'Godox', 'Profoto', 'Rode', 'Sennheiser', 'Zoom',
+  'Manfrotto', 'Peak Design', 'SanDisk', 'Lexar', 'Other',
+]
 const EMPTY = {
   name: '', category: '', brand: '', model_name: '', serial_number: '', purchase_date: '',
   purchase_price: '', condition: 'Excellent', insured: false, insurance_value: '',
@@ -22,6 +29,7 @@ const EMPTY_PAYMENT = { amount: '', date: '', method: '', reference: '', notes: 
 export default function Equipment() {
   const [rows, setRows] = useState([])
   const [cats, setCats] = useState([])
+  const [brands, setBrands] = useState([])
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('')
   const [selected, setSelected] = useState(null)
@@ -38,6 +46,7 @@ export default function Equipment() {
   useEffect(() => { load() }, [load])
   useAutoRefresh(load)
   useEffect(() => { api.equipCategories().then(setCats).catch(() => {}) }, [])
+  useEffect(() => { api.equipBrands().then(setBrands).catch(() => {}) }, [])
 
   useEffect(() => {
     if (selected?.financed) {
@@ -82,6 +91,7 @@ export default function Equipment() {
       else { await api.createEquipment(data); toast('Equipment added') }
       setModal(null); setSelected(null); load()
       api.equipCategories().then(setCats).catch(() => {})
+      api.equipBrands().then(setBrands).catch(() => {})
     } catch (e) { toast(e.message, 'error') }
     finally { setSaving(false) }
   }
@@ -108,6 +118,7 @@ export default function Equipment() {
 
   const totalValue = rows.reduce((s, r) => s + Number(r.purchase_price || 0), 0)
   const categoryOptions = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort((a, b) => a.localeCompare(b))
+  const brandOptions = [...new Set([...DEFAULT_BRANDS, ...brands])].sort((a, b) => a.localeCompare(b))
 
   return (
     <div className="page">
@@ -190,12 +201,11 @@ export default function Equipment() {
           <div className="grid-2">
             <div className="field">
               <label>Category</label>
-              <input className="input" list="ecats" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Choose or type a category" />
-              <datalist id="ecats">{categoryOptions.map(c => <option key={c} value={c} />)}</datalist>
+              <Combobox value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))} options={categoryOptions} placeholder="Choose or type a category" />
             </div>
             <div className="field">
               <label>Brand</label>
-              <input className="input" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+              <Combobox value={form.brand} onChange={v => setForm(f => ({ ...f, brand: v }))} options={brandOptions} placeholder="Choose or type a brand" />
             </div>
           </div>
           <div className="grid-2">

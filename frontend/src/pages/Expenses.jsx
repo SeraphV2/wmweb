@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
+import Combobox from '../components/Combobox'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
 import { EXPENSE_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer', 'PayPal', 'Other']
+const DEFAULT_EXPENSE_CATEGORIES = [
+  'Equipment', 'Travel', 'Software', 'Marketing', 'Studio Rental', 'Insurance',
+  'Props', 'Printing', 'Editing / Post-Production', 'Subcontractor', 'Other',
+]
 const EMPTY = { project_id: '', category: '', description: '', amount: '', date: '', payment_method: '', notes: '' }
 
 export default function Expenses() {
@@ -64,6 +69,7 @@ export default function Expenses() {
   }
 
   const total = rows.reduce((s, r) => s + Number(r.amount || 0), 0)
+  const categoryOptions = [...new Set([...DEFAULT_EXPENSE_CATEGORIES, ...cats])].sort((a, b) => a.localeCompare(b))
 
   return (
     <div className="page">
@@ -132,8 +138,7 @@ export default function Expenses() {
           </div>
           <div className="field">
             <label>Category</label>
-            <input className="input" list="cats" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Equipment, Travel" />
-            <datalist id="cats">{cats.map(c => <option key={c} value={c} />)}</datalist>
+            <Combobox value={form.category} onChange={v => setForm(f => ({ ...f, category: v }))} options={categoryOptions} placeholder="Choose or type a category" />
           </div>
           <div className="field">
             <label>Description *</label>
