@@ -7,6 +7,11 @@ import { toCSV, downloadCSV } from '../lib/csv'
 import { EQUIPMENT_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged']
+const DEFAULT_CATEGORIES = [
+  'Camera', 'Lens', 'Tripod', 'Lighting', 'Audio', 'Drone', 'Gimbal / Stabilizer',
+  'Memory Card', 'Battery', 'Bag / Case', 'Monitor', 'Backdrop', 'Computer / Editing',
+  'Software / License', 'Accessories', 'Other',
+]
 const EMPTY = {
   name: '', category: '', brand: '', model_name: '', serial_number: '', purchase_date: '',
   purchase_price: '', condition: 'Excellent', insured: false, insurance_value: '',
@@ -102,6 +107,7 @@ export default function Equipment() {
   }
 
   const totalValue = rows.reduce((s, r) => s + Number(r.purchase_price || 0), 0)
+  const categoryOptions = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort((a, b) => a.localeCompare(b))
 
   return (
     <div className="page">
@@ -184,8 +190,8 @@ export default function Equipment() {
           <div className="grid-2">
             <div className="field">
               <label>Category</label>
-              <input className="input" list="ecats" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="e.g. Camera, Lens" />
-              <datalist id="ecats">{cats.map(c => <option key={c} value={c} />)}</datalist>
+              <input className="input" list="ecats" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} placeholder="Choose or type a category" />
+              <datalist id="ecats">{categoryOptions.map(c => <option key={c} value={c} />)}</datalist>
             </div>
             <div className="field">
               <label>Brand</label>
