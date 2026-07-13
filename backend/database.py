@@ -198,8 +198,20 @@ class Database:
                 `condition`     VARCHAR(50)   DEFAULT 'Excellent',
                 insured         TINYINT(1)    DEFAULT 0,
                 insurance_value DECIMAL(10,2) DEFAULT 0,
+                financed        TINYINT(1)    DEFAULT 0,
+                finance_amount  DECIMAL(10,2) DEFAULT 0,
                 notes           TEXT,
                 created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS equipment_payments (
+                id           INT AUTO_INCREMENT PRIMARY KEY,
+                equipment_id INT,
+                amount       DECIMAL(10,2) DEFAULT 0,
+                `date`       DATE,
+                method       VARCHAR(100),
+                reference    VARCHAR(255),
+                notes        TEXT,
+                created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
             """CREATE TABLE IF NOT EXISTS tasks (
                 id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -229,6 +241,8 @@ class Database:
             "ALTER TABLE tasks ADD COLUMN position INT DEFAULT 0",
             "ALTER TABLE users ADD COLUMN theme VARCHAR(20) DEFAULT 'light'",
             "ALTER TABLE users ADD COLUMN last_login TIMESTAMP NULL DEFAULT NULL",
+            "ALTER TABLE equipment ADD COLUMN financed TINYINT(1) DEFAULT 0",
+            "ALTER TABLE equipment ADD COLUMN finance_amount DECIMAL(10,2) DEFAULT 0",
         ]:
             try:
                 self._mc.execute(stmt)
@@ -577,30 +591,38 @@ class Database:
         self._ex(q, params)
         return self._rows()
 
+    def get_equipment_item(self, eid):
+        self._ex("SELECT * FROM equipment WHERE id=%s", (eid,))
+        return self._row()
+
     def add_equipment(self, data):
         self._ex(
             "INSERT INTO equipment (name,category,brand,model_name,serial_number,"
-            "purchase_date,purchase_price,`condition`,insured,insurance_value,notes) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "purchase_date,purchase_price,`condition`,insured,insurance_value,"
+            "financed,finance_amount,notes) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (data['name'], data.get('category',''), data.get('brand',''),
              data.get('model_name',''), data.get('serial_number',''),
              data.get('purchase_date') or None, data.get('purchase_price',0),
              data.get('condition','Excellent'), 1 if data.get('insured') else 0,
-             data.get('insurance_value',0), data.get('notes','')))
+             data.get('insurance_value',0), 1 if data.get('financed') else 0,
+             data.get('finance_amount',0), data.get('notes','')))
         return self._mc.lastrowid
 
     def update_equipment(self, eid, data):
         self._ex(
             "UPDATE equipment SET name=%s,category=%s,brand=%s,model_name=%s,"
             "serial_number=%s,purchase_date=%s,purchase_price=%s,`condition`=%s,"
-            "insured=%s,insurance_value=%s,notes=%s WHERE id=%s",
+            "insured=%s,insurance_value=%s,financed=%s,finance_amount=%s,notes=%s WHERE id=%s",
             (data['name'], data.get('category',''), data.get('brand',''),
              data.get('model_name',''), data.get('serial_number',''),
              data.get('purchase_date') or None, data.get('purchase_price',0),
              data.get('condition','Excellent'), 1 if data.get('insured') else 0,
-             data.get('insurance_value',0), data.get('notes',''), eid))
+             data.get('insurance_value',0), 1 if data.get('financed') else 0,
+             data.get('finance_amount',0), data.get('notes',''), eid))
 
     def delete_equipment(self, eid):
+        self._ex("DELETE FROM equipment_payments WHERE equipment_id=%s", (eid,))
         self._ex("DELETE FROM equipment WHERE id=%s", (eid,))
 
     def get_equipment_categories(self):
@@ -608,6 +630,28 @@ class Database:
             "SELECT DISTINCT category FROM equipment "
             "WHERE category IS NOT NULL ORDER BY category")
         return [row['category'] for row in self._rows()]
+
+    # ── Equipment payments ───────────────────────────────────────────────────
+
+    def get_equipment_payments(self, eid):
+        self._ex(
+            "SELECT * FROM equipment_payments WHERE equipment_id=%s ORDER BY `date` DESC",
+            (eid,))
+        return self._rows()
+
+    def add_equipment_payment(self, data):
+        self._ex(
+            "INSERT INTO equipment_payments (equipment_id,amount,`date`,method,reference,notes) "
+            "VALUES (%s,%s,%s,%s,%s,%s)",
+            (data['equipment_id'], data['amount'], data.get('date') or None,
+             data.get('method',''), data.get('reference',''), data.get('notes','')))
+        return self._mc.lastrowid
+
+    def get_equipment_payments_total(self, eid):
+        self._ex(
+            "SELECT COALESCE(SUM(amount),0) AS t FROM equipment_payments WHERE equipment_id=%s",
+            (eid,))
+        return self._row()['t']
 
     # ── Tasks ─────────────────────────────────────────────────────────────────
 

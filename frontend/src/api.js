@@ -112,9 +112,11 @@ export const api = {
   getEquipment:   (search = '', category = '') =>
     req('GET', `/api/equipment/?search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`),
   equipCategories: () => req('GET', '/api/equipment/categories'),
+  getEquipmentItem: (id) => req('GET', `/api/equipment/${id}`),
   createEquipment: (data) => req('POST', '/api/equipment/', data),
   updateEquipment: (id, data) => req('PUT', `/api/equipment/${id}`, data),
   deleteEquipment: (id) => req('DELETE', `/api/equipment/${id}`),
+  addEquipmentPayment: (id, data) => req('POST', `/api/equipment/${id}/payments`, data),
 
   // Tasks
   getTasks:       (search = '') => req('GET', `/api/tasks/?search=${encodeURIComponent(search)}`),
