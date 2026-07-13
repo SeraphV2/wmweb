@@ -3,9 +3,18 @@ import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { toCSV, downloadCSV } from '../lib/csv'
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer', 'PayPal', 'Other']
 const EMPTY = { project_id: '', category: '', description: '', amount: '', date: '', payment_method: '', notes: '' }
+const CSV_COLUMNS = [
+  { label: 'Date', value: 'date' },
+  { label: 'Category', value: 'category' },
+  { label: 'Description', value: 'description' },
+  { label: 'Project', value: 'project_title' },
+  { label: 'Method', value: 'payment_method' },
+  { label: 'Amount', value: 'amount' },
+]
 
 export default function Expenses() {
   const [rows, setRows] = useState([])
@@ -30,6 +39,7 @@ export default function Expenses() {
   }, [])
 
   function openNew() { setForm({ ...EMPTY, date: new Date().toISOString().slice(0, 10) }); setModal('new') }
+  function exportCsv() { downloadCSV(`expenses-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, CSV_COLUMNS)) }
   function openEdit() {
     if (!selected) return
     setForm({
@@ -72,6 +82,7 @@ export default function Expenses() {
             <option value="">All categories</option>
             {cats.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+          <button className="btn btn-ghost" onClick={exportCsv} disabled={!rows.length}>⬇️ Export</button>
           <button className="btn btn-primary" onClick={openNew}>＋ Add Expense</button>
         </div>
       </div>

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from database import Database
-from deps import get_db
+from deps import get_db, get_current_user
 
 router = APIRouter()
 
@@ -65,40 +65,49 @@ def get_invoice(iid: int, db: Database = Depends(get_db)):
 
 
 @router.post("/")
-def create_invoice(body: InvoiceBody, db: Database = Depends(get_db)):
+def create_invoice(body: InvoiceBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     data = body.model_dump()
     items = data.pop('items')
     if not data['invoice_number']:
         data['invoice_number'] = db.next_invoice_number()
     iid = db.add_invoice(data, items)
+    db.log_activity(current['username'], 'created', 'invoice', iid, data['invoice_number'])
     return {"id": iid}
 
 
 @router.put("/{iid}")
-def update_invoice(iid: int, body: InvoiceBody, db: Database = Depends(get_db)):
+def update_invoice(iid: int, body: InvoiceBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     data = body.model_dump()
     items = data.pop('items')
     db.update_invoice(iid, data, items)
+    db.log_activity(current['username'], 'updated', 'invoice', iid, data.get('invoice_number') or f'#{iid}')
     return {"ok": True}
 
 
 @router.patch("/{iid}/status")
-def update_status(iid: int, body: StatusBody, db: Database = Depends(get_db)):
+def update_status(iid: int, body: StatusBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_invoice_status(iid, body.status)
+    inv = db.get_invoice(iid)
+    label = f"{inv['invoice_number']} marked {body.status}" if inv else f'#{iid} marked {body.status}'
+    db.log_activity(current['username'], 'updated', 'invoice', iid, label)
     return {"ok": True}
 
 
 @router.delete("/{iid}")
-def delete_invoice(iid: int, db: Database = Depends(get_db)):
+def delete_invoice(iid: int, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+    existing = db.get_invoice(iid)
     db.delete_invoice(iid)
+    db.log_activity(current['username'], 'deleted', 'invoice', iid, existing['invoice_number'] if existing else f'#{iid}')
     return {"ok": True}
 
 
 @router.post("/{iid}/payments")
-def add_payment(iid: int, body: PaymentBody, db: Database = Depends(get_db)):
+def add_payment(iid: int, body: PaymentBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     pid = db.add_payment(body.model_dump())
     paid = db.get_payments_total(iid)
     inv = db.get_invoice(iid)
     if inv and paid >= inv['total']:
         db.update_invoice_status(iid, 'Paid')
+    label = f"Payment recorded on {inv['invoice_number']}" if inv else f'Payment recorded on #{iid}'
+    db.log_activity(current['username'], 'updated', 'invoice', iid, label)
     return {"id": pid}

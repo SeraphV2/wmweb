@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from database import Database
-from deps import get_db
+from deps import get_db, get_current_user
 
 router = APIRouter()
 
@@ -36,18 +36,22 @@ def get_client(cid: int, db: Database = Depends(get_db)):
 
 
 @router.post("/")
-def create_client(body: ClientBody, db: Database = Depends(get_db)):
+def create_client(body: ClientBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     cid = db.add_client(body.model_dump())
+    db.log_activity(current['username'], 'created', 'client', cid, body.name)
     return {"id": cid}
 
 
 @router.put("/{cid}")
-def update_client(cid: int, body: ClientBody, db: Database = Depends(get_db)):
+def update_client(cid: int, body: ClientBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_client(cid, body.model_dump())
+    db.log_activity(current['username'], 'updated', 'client', cid, body.name)
     return {"ok": True}
 
 
 @router.delete("/{cid}")
-def delete_client(cid: int, db: Database = Depends(get_db)):
+def delete_client(cid: int, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+    existing = db.get_client(cid)
     db.delete_client(cid)
+    db.log_activity(current['username'], 'deleted', 'client', cid, existing['name'] if existing else f'#{cid}')
     return {"ok": True}

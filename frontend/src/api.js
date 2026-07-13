@@ -1,3 +1,5 @@
+import { applyTheme } from './lib/theme'
+
 const BASE = import.meta.env.VITE_API_URL || ''
 
 function token() {
@@ -44,6 +46,7 @@ export const api = {
     localStorage.setItem('wm_token', data.access_token)
     localStorage.setItem('wm_role', data.role || 'staff')
     localStorage.setItem('wm_name', data.full_name || username)
+    applyTheme(data.theme || 'light')
     return data
   },
 
@@ -56,6 +59,10 @@ export const api = {
   updateUser:  (id, data) => req('PUT', `/api/users/${id}`, data),
   deleteUser:  (id) => req('DELETE', `/api/users/${id}`),
   assignableUsers: () => req('GET', '/api/users/assignable'),
+  updateMyTheme: (theme) => req('PATCH', '/api/users/me/theme', { theme }),
+
+  // Activity log (admin only)
+  getActivity: () => req('GET', '/api/activity/'),
 
   // Dashboard
   dashStats:      () => req('GET', '/api/dashboard/stats'),

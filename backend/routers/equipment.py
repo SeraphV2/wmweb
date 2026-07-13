@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from database import Database
-from deps import get_db
+from deps import get_db, get_current_user
 
 router = APIRouter()
 
@@ -32,18 +32,21 @@ def categories(db: Database = Depends(get_db)):
 
 
 @router.post("/")
-def create_equipment(body: EquipmentBody, db: Database = Depends(get_db)):
+def create_equipment(body: EquipmentBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     eid = db.add_equipment(body.model_dump())
+    db.log_activity(current['username'], 'created', 'equipment', eid, body.name)
     return {"id": eid}
 
 
 @router.put("/{eid}")
-def update_equipment(eid: int, body: EquipmentBody, db: Database = Depends(get_db)):
+def update_equipment(eid: int, body: EquipmentBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_equipment(eid, body.model_dump())
+    db.log_activity(current['username'], 'updated', 'equipment', eid, body.name)
     return {"ok": True}
 
 
 @router.delete("/{eid}")
-def delete_equipment(eid: int, db: Database = Depends(get_db)):
+def delete_equipment(eid: int, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.delete_equipment(eid)
+    db.log_activity(current['username'], 'deleted', 'equipment', eid, f'#{eid}')
     return {"ok": True}

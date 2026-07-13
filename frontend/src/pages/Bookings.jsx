@@ -3,6 +3,22 @@ import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { toCSV, downloadCSV } from '../lib/csv'
+
+const CSV_COLUMNS = [
+  { label: 'Title', value: 'title' },
+  { label: 'Client', value: 'client_name' },
+  { label: 'Type', value: 'type' },
+  { label: 'Status', value: 'status' },
+  { label: 'Date', value: 'date' },
+  { label: 'Start Time', value: 'start_time' },
+  { label: 'End Time', value: 'end_time' },
+  { label: 'Location', value: 'location' },
+  { label: 'Package', value: 'package' },
+  { label: 'Rate', value: 'rate' },
+  { label: 'Deposit', value: 'deposit' },
+  { label: 'Notes', value: 'notes' },
+]
 
 const STATUSES = ['Inquiry', 'Confirmed', 'In Progress', 'Completed', 'Cancelled']
 const TYPES = ['Photography', 'Videography', 'Both', 'Other']
@@ -70,6 +86,7 @@ export default function Bookings() {
   }, [rows])
 
   function openNew(dateStr) { setForm(dateStr ? { ...EMPTY, date: dateStr } : EMPTY); setModal('new') }
+  function exportCsv() { downloadCSV(`bookings-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, CSV_COLUMNS)) }
   function openEdit(booking) {
     const b = booking || selected
     if (!b) return
@@ -132,6 +149,7 @@ export default function Bookings() {
             <button className={`btn btn-sm ${view === 'list' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('list')}>📋 List</button>
             <button className={`btn btn-sm ${view === 'calendar' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('calendar')}>📅 Calendar</button>
           </div>
+          <button className="btn btn-ghost" onClick={exportCsv} disabled={!rows.length}>⬇️ Export</button>
           <button className="btn btn-primary" onClick={() => openNew()}>＋ New Booking</button>
         </div>
       </div>

@@ -3,9 +3,22 @@ import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { toCSV, downloadCSV } from '../lib/csv'
 
 const STATUSES = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled']
 const BADGE = { Paid: 'badge-green', Draft: 'badge-gray', Sent: 'badge-blue', Overdue: 'badge-red', Cancelled: 'badge-gray' }
+const CSV_COLUMNS = [
+  { label: 'Invoice #', value: 'invoice_number' },
+  { label: 'Client', value: 'client_name' },
+  { label: 'Project', value: 'project_title' },
+  { label: 'Issue Date', value: 'issue_date' },
+  { label: 'Due Date', value: 'due_date' },
+  { label: 'Status', value: 'status' },
+  { label: 'Subtotal', value: 'subtotal' },
+  { label: 'Tax', value: 'tax_amount' },
+  { label: 'Discount', value: 'discount' },
+  { label: 'Total', value: 'total' },
+]
 
 const EMPTY_ITEM = { description: '', quantity: 1, rate: '', amount: 0 }
 const EMPTY_FORM = {
@@ -65,6 +78,7 @@ export default function Invoices() {
     setModal('new')
     api.nextInvoiceNum().then(r => setForm(f => ({ ...f, invoice_number: r.number }))).catch(() => {})
   }
+  function exportCsv() { downloadCSV(`invoices-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, CSV_COLUMNS)) }
 
   function openEdit() {
     if (!selected) return
@@ -134,6 +148,7 @@ export default function Invoices() {
             <option value="">All statuses</option>
             {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          <button className="btn btn-ghost" onClick={exportCsv} disabled={!rows.length}>⬇️ Export</button>
           <button className="btn btn-primary" onClick={openNew}>＋ New Invoice</button>
         </div>
       </div>
@@ -230,7 +245,7 @@ export default function Invoices() {
             <div className="tbl-wrap">
             <table style={{ width: '100%', minWidth: 460, borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
-                <tr style={{ background: '#f5efe5' }}>
+                <tr style={{ background: 'var(--input)' }}>
                   <th style={{ padding: '6px 8px', textAlign: 'left', width: '45%' }}>Description</th>
                   <th style={{ padding: '6px 8px', textAlign: 'right', width: '15%' }}>Qty</th>
                   <th style={{ padding: '6px 8px', textAlign: 'right', width: '20%' }}>Rate</th>
@@ -265,7 +280,7 @@ export default function Invoices() {
               <input className="input" type="number" step="0.01" value={form.discount} onChange={e => setForm(f => ({ ...f, discount: e.target.value }))} />
             </div>
           </div>
-          <div style={{ background: '#f5efe5', borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>
+          <div style={{ background: 'var(--input)', borderRadius: 8, padding: '12px 16px', fontSize: 13 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>£{tots.subtotal.toFixed(2)}</span></div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Tax ({form.tax_rate}%)</span><span>£{tots.tax_amount.toFixed(2)}</span></div>
             {Number(form.discount) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Discount</span><span>-£{Number(form.discount).toFixed(2)}</span></div>}

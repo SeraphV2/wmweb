@@ -118,6 +118,7 @@ export default function Users() {
                   <th>Role</th>
                   <th>Status</th>
                   <th>Created</th>
+                  <th>Last Login</th>
                   <th></th>
                 </tr>
               </thead>
@@ -148,6 +149,7 @@ export default function Users() {
                       </span>
                     </td>
                     <td style={{ fontSize: 12, color: 'var(--muted)' }}>{u.created_at?.slice(0, 10) || '—'}</td>
+                    <td style={{ fontSize: 12, color: 'var(--muted)' }}>{u.last_login?.slice(0, 10) || 'Never'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)}>✏️</button>

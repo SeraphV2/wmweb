@@ -11,6 +11,7 @@ import Equipment from './pages/Equipment'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Users from './pages/Users'
+import ActivityLog from './pages/ActivityLog'
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem('wm_token')
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="reports"    element={<Reports />} />
           <Route path="settings"   element={<Settings />} />
           <Route path="users"      element={<Users />} />
+          <Route path="activity"   element={<ActivityLog />} />
         </Route>
       </Routes>
     </BrowserRouter>

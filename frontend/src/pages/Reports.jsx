@@ -65,7 +65,7 @@ export default function Reports() {
         <div className="grid-reports">
           {/* Bar chart */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>
+            <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>
               📊 Revenue vs Expenses
             </div>
             <div style={{ padding: '16px 12px' }}>
@@ -86,7 +86,7 @@ export default function Reports() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Pie chart */}
             <div className="card" style={{ padding: 0, overflow: 'hidden', flex: 1 }}>
-              <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>
+              <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>
                 🍕 Expense Breakdown
               </div>
               {catData.length === 0 ? (
@@ -107,7 +107,7 @@ export default function Reports() {
 
             {/* Category table */}
             <div className="card" style={{ padding: 0, overflow: 'hidden', flex: 1 }}>
-              <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>
+              <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14 }}>
                 Expenses by Category
               </div>
               {catData.length === 0 ? (

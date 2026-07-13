@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from database import Database
-from deps import get_db
+from deps import get_db, get_current_user
 
 router = APIRouter()
 
@@ -36,18 +36,22 @@ def get_project(pid: int, db: Database = Depends(get_db)):
 
 
 @router.post("/")
-def create_project(body: ProjectBody, db: Database = Depends(get_db)):
+def create_project(body: ProjectBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     pid = db.add_project(body.model_dump())
+    db.log_activity(current['username'], 'created', 'booking', pid, body.title)
     return {"id": pid}
 
 
 @router.put("/{pid}")
-def update_project(pid: int, body: ProjectBody, db: Database = Depends(get_db)):
+def update_project(pid: int, body: ProjectBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_project(pid, body.model_dump())
+    db.log_activity(current['username'], 'updated', 'booking', pid, body.title)
     return {"ok": True}
 
 
 @router.delete("/{pid}")
-def delete_project(pid: int, db: Database = Depends(get_db)):
+def delete_project(pid: int, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+    existing = db.get_project(pid)
     db.delete_project(pid)
+    db.log_activity(current['username'], 'deleted', 'booking', pid, existing['title'] if existing else f'#{pid}')
     return {"ok": True}

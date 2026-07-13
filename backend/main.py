@@ -7,7 +7,7 @@ from auth import create_token, ADMIN_PASSWORD, hash_password, verify_password
 from deps import get_db, get_current_user
 from database import Database
 
-from routers import clients, projects, invoices, expenses, equipment, dashboard, reports, settings, tasks
+from routers import clients, projects, invoices, expenses, equipment, dashboard, reports, settings, tasks, activity
 from routers import users as users_router
 
 
@@ -45,11 +45,13 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Database = Depends(ge
     user = db.get_user_by_username(form.username)
     if not user or not verify_password(form.password, user['password_hash']):
         raise HTTPException(status_code=400, detail="Incorrect username or password")
+    db.record_login(user['id'])
     return {
         "access_token": create_token(user['username'], user['role']),
         "token_type": "bearer",
         "role": user['role'],
         "full_name": user['full_name'] or user['username'],
+        "theme": user.get('theme') or 'light',
     }
 
 
@@ -68,6 +70,7 @@ app.include_router(tasks.router,          prefix="/api/tasks",      dependencies
 app.include_router(reports.router,        prefix="/api/reports",    dependencies=auth_dep)
 app.include_router(settings.router,       prefix="/api/settings",   dependencies=auth_dep)
 app.include_router(users_router.router,   prefix="/api/users",      dependencies=auth_dep)
+app.include_router(activity.router,       prefix="/api/activity",   dependencies=auth_dep)
 
 
 @app.get("/api/health")

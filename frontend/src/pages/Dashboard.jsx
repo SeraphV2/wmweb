@@ -71,7 +71,7 @@ export default function Dashboard() {
         <div className="grid-dash">
           {/* Upcoming bookings */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>📅 Upcoming Bookings</span>
               <button className="btn btn-ghost btn-sm" onClick={() => navigate('/bookings')}>View all</button>
             </div>
@@ -99,7 +99,7 @@ export default function Dashboard() {
 
           {/* Recent invoices */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>🧾 Recent Invoices</span>
               <button className="btn btn-ghost btn-sm" onClick={() => navigate('/invoices')}>View all</button>
             </div>
@@ -129,7 +129,7 @@ export default function Dashboard() {
         <div className="grid-dash">
           {/* Tasks by status */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>📋 Tasks by Status</span>
               <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>View all</button>
             </div>
@@ -151,7 +151,7 @@ export default function Dashboard() {
 
           {/* Tasks due soon */}
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', background: '#f5efe5', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '14px 18px', background: 'var(--input)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 700, fontSize: 14 }}>⏰ Tasks Due Soon</span>
               <button className="btn btn-ghost btn-sm" onClick={() => navigate('/tasks')}>View all</button>
             </div>

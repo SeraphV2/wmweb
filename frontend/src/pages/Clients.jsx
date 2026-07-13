@@ -3,8 +3,20 @@ import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { toCSV, downloadCSV } from '../lib/csv'
 
 const EMPTY_FORM = { name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', notes: '' }
+const CSV_COLUMNS = [
+  { label: 'Name', value: 'name' },
+  { label: 'Email', value: 'email' },
+  { label: 'Phone', value: 'phone' },
+  { label: 'Address', value: 'address' },
+  { label: 'City', value: 'city' },
+  { label: 'State', value: 'state' },
+  { label: 'ZIP', value: 'zip' },
+  { label: 'Projects', value: 'project_count' },
+  { label: 'Notes', value: 'notes' },
+]
 
 export default function Clients() {
   const [rows, setRows] = useState([])
@@ -23,6 +35,7 @@ export default function Clients() {
   useAutoRefresh(load)
 
   function openNew() { setForm(EMPTY_FORM); setModal('new') }
+  function exportCsv() { downloadCSV(`clients-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, CSV_COLUMNS)) }
   function openEdit() {
     if (!selected) return
     setForm({
@@ -84,6 +97,7 @@ export default function Clients() {
         <div className="search-bar">
           <input className="search-input" placeholder="🔍 Search clients…" value={search}
             onChange={e => setSearch(e.target.value)} />
+          <button className="btn btn-ghost" onClick={exportCsv} disabled={!rows.length}>⬇️ Export</button>
           <button className="btn btn-primary" onClick={openNew}>＋ New Client</button>
         </div>
       </div>

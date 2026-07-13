@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { api } from '../api'
 import { toast } from '../components/Toast'
+import { getStoredTheme, applyTheme } from '../lib/theme'
 
 const FIELDS = [
   { key: 'company_name',   label: 'Company Name',     section: 'Company' },
@@ -22,10 +23,17 @@ const FIELDS = [
 export default function Settings() {
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [theme, setTheme] = useState(getStoredTheme())
 
   useEffect(() => {
     api.getSettings().then(setForm).catch(e => toast(e.message, 'error'))
   }, [])
+
+  async function chooseTheme(t) {
+    setTheme(t)
+    applyTheme(t)
+    try { await api.updateMyTheme(t) } catch (e) { toast(e.message, 'error') }
+  }
 
   async function save(e) {
     e.preventDefault()
@@ -48,7 +56,17 @@ export default function Settings() {
         <h1>Settings</h1>
       </div>
       <div className="page-body">
-        <form onSubmit={save} style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 16 }}>Appearance</h3>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => chooseTheme('light')}>☀️ Light</button>
+              <button type="button" className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => chooseTheme('dark')}>🌙 Dark</button>
+            </div>
+            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Saved to your account, so it follows you to any device you log in on.</p>
+          </div>
+
+          <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {sections.map(section => (
             <div key={section} className="card">
               <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 16 }}>{section}</h3>
@@ -73,6 +91,7 @@ export default function Settings() {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   )

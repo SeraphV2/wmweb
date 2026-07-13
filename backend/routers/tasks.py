@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List
 from database import Database
-from deps import get_db
+from deps import get_db, get_current_user
 
 router = APIRouter()
 
@@ -49,14 +49,16 @@ def groups(db: Database = Depends(get_db)):
 
 
 @router.post("/")
-def create_task(body: TaskBody, db: Database = Depends(get_db)):
+def create_task(body: TaskBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     tid = db.add_task(body.model_dump())
+    db.log_activity(current['username'], 'created', 'task', tid, body.title)
     return {"id": tid}
 
 
 @router.put("/{tid}")
-def update_task(tid: int, body: TaskBody, db: Database = Depends(get_db)):
+def update_task(tid: int, body: TaskBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     db.update_task(tid, body.model_dump())
+    db.log_activity(current['username'], 'updated', 'task', tid, body.title)
     return {"ok": True}
 
 
@@ -67,10 +69,13 @@ def reorder(body: ReorderBody, db: Database = Depends(get_db)):
 
 
 @router.patch("/{tid}/status")
-def update_status(tid: int, body: StatusBody, db: Database = Depends(get_db)):
+def update_status(tid: int, body: StatusBody, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     if body.status not in STATUSES:
         raise HTTPException(400, f"Status must be one of {STATUSES}")
     db.update_task_status(tid, body.status)
+    task = db.get_task(tid)
+    label = f"{task['title']} moved to {body.status}" if task else f'#{tid} moved to {body.status}'
+    db.log_activity(current['username'], 'updated', 'task', tid, label)
     return {"ok": True}
 
 
@@ -83,6 +88,8 @@ def update_priority(tid: int, body: PriorityBody, db: Database = Depends(get_db)
 
 
 @router.delete("/{tid}")
-def delete_task(tid: int, db: Database = Depends(get_db)):
+def delete_task(tid: int, current: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+    existing = db.get_task(tid)
     db.delete_task(tid)
+    db.log_activity(current['username'], 'deleted', 'task', tid, existing['title'] if existing else f'#{tid}')
     return {"ok": True}

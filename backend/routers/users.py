@@ -25,6 +25,10 @@ class UserUpdate(BaseModel):
     active: bool = True
 
 
+class ThemeBody(BaseModel):
+    theme: str
+
+
 @router.get("/")
 def list_users(
     _admin: dict = Depends(require_admin),
@@ -44,6 +48,21 @@ def assignable_users(
     ]
 
 
+@router.patch("/me/theme")
+def update_my_theme(
+    body: ThemeBody,
+    current: dict = Depends(get_current_user),
+    db: Database = Depends(get_db),
+):
+    if body.theme not in ("light", "dark"):
+        raise HTTPException(400, "Theme must be 'light' or 'dark'")
+    user = db.get_user_by_username(current['username'])
+    if not user:
+        raise HTTPException(404, "User not found")
+    db.update_user_theme(user['id'], body.theme)
+    return {"ok": True}
+
+
 @router.post("/")
 def create_user(
     body: UserCreate,
@@ -60,6 +79,7 @@ def create_user(
         'full_name': body.full_name,
         'role': body.role,
     })
+    db.log_activity(_admin['username'], 'created', 'user', uid, body.username)
     return {"id": uid}
 
 
@@ -80,6 +100,7 @@ def update_user(
         'password_hash': hash_password(body.password) if body.password else '',
     }
     db.update_user(uid, data)
+    db.log_activity(current['username'], 'updated', 'user', uid, body.username)
     return {"ok": True}
 
 
@@ -97,4 +118,5 @@ def delete_user(
     if target['role'] == 'admin' and len(admins) <= 1:
         raise HTTPException(400, "Cannot delete the only admin account")
     db.delete_user(uid)
+    db.log_activity(current['username'], 'deleted', 'user', uid, target['username'])
     return {"ok": True}

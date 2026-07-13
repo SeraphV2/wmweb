@@ -109,6 +109,8 @@ class Database:
                 full_name     VARCHAR(255) DEFAULT '',
                 role          VARCHAR(50)  DEFAULT 'staff',
                 active        TINYINT(1)   DEFAULT 1,
+                theme         VARCHAR(20)  DEFAULT 'light',
+                last_login    TIMESTAMP NULL DEFAULT NULL,
                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
             """CREATE TABLE IF NOT EXISTS clients (
@@ -211,13 +213,27 @@ class Database:
                 position    INT DEFAULT 0,
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
+            """CREATE TABLE IF NOT EXISTS activity_log (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                username    VARCHAR(100) NOT NULL,
+                action      VARCHAR(20)  NOT NULL,
+                entity_type VARCHAR(50)  NOT NULL,
+                entity_id   INT,
+                label       VARCHAR(255),
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
         ]
         for stmt in stmts:
             self._ex(stmt)
-        try:
-            self._mc.execute("ALTER TABLE tasks ADD COLUMN position INT DEFAULT 0")
-        except Exception:
-            pass
+        for stmt in [
+            "ALTER TABLE tasks ADD COLUMN position INT DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN theme VARCHAR(20) DEFAULT 'light'",
+            "ALTER TABLE users ADD COLUMN last_login TIMESTAMP NULL DEFAULT NULL",
+        ]:
+            try:
+                self._mc.execute(stmt)
+            except Exception:
+                pass
         for k, v in SETTINGS_DEFAULTS.items():
             self._ex(
                 "INSERT IGNORE INTO settings (`key`, value) VALUES (%s, %s)", (k, v))
@@ -246,12 +262,23 @@ class Database:
 
     def get_users(self):
         self._ex(
-            "SELECT id, username, full_name, role, active, created_at FROM users ORDER BY created_at")
+            "SELECT id, username, full_name, role, active, theme, last_login, created_at "
+            "FROM users ORDER BY created_at")
         return self._rows()
 
     def get_user_by_username(self, username):
         self._ex("SELECT * FROM users WHERE username=%s AND active=1", (username,))
         return self._row()
+
+    def get_user_by_id(self, uid):
+        self._ex("SELECT * FROM users WHERE id=%s", (uid,))
+        return self._row()
+
+    def update_user_theme(self, uid, theme):
+        self._ex("UPDATE users SET theme=%s WHERE id=%s", (theme, uid))
+
+    def record_login(self, uid):
+        self._ex("UPDATE users SET last_login=NOW() WHERE id=%s", (uid,))
 
     def count_users(self):
         self._ex("SELECT COUNT(*) AS c FROM users")
@@ -594,6 +621,10 @@ class Database:
         self._ex(q, params)
         return self._rows()
 
+    def get_task(self, tid):
+        self._ex("SELECT * FROM tasks WHERE id=%s", (tid,))
+        return self._row()
+
     def get_task_groups(self):
         self._ex(
             "SELECT DISTINCT group_name FROM tasks "
@@ -708,6 +739,19 @@ class Database:
             params.append(year)
         q += " GROUP BY category ORDER BY total DESC"
         self._ex(q, params)
+        return self._rows()
+
+    # ── Activity log ──────────────────────────────────────────────────────────
+
+    def log_activity(self, username, action, entity_type, entity_id, label):
+        self._ex(
+            "INSERT INTO activity_log (username, action, entity_type, entity_id, label) "
+            "VALUES (%s,%s,%s,%s,%s)",
+            (username, action, entity_type, entity_id, label))
+
+    def get_activity_log(self, limit=100):
+        self._ex(
+            "SELECT * FROM activity_log ORDER BY created_at DESC LIMIT %s", (limit,))
         return self._rows()
 
     def close(self):

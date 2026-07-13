@@ -41,7 +41,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
 
   return (
     <aside className={`app-sidebar${mobileOpen ? ' open' : ''}`} style={{
-      width: 235, background: 'rgba(255,255,255,.92)',
+      width: 235, background: 'var(--glass-bg)',
       backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
       borderRight: '1px solid var(--border-soft)', boxShadow: '6px 0 30px rgba(28,20,16,.05)',
       display: 'flex', flexDirection: 'column', flexShrink: 0,
@@ -81,7 +81,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         {NAV.map((item) => (
           <div key={item.to}>
             {item.section && (
-              <div style={{ padding: '12px 22px 2px', fontSize: 9, fontWeight: 700, color: '#a09070', letterSpacing: '.04em' }}>
+              <div style={{ padding: '12px 22px 2px', fontSize: 9, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.04em' }}>
                 {item.section}
               </div>
             )}
@@ -92,10 +92,11 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         {/* Admin-only section */}
         {role === 'admin' && (
           <>
-            <div style={{ padding: '12px 22px 2px', fontSize: 9, fontWeight: 700, color: '#a09070', letterSpacing: '.04em' }}>
+            <div style={{ padding: '12px 22px 2px', fontSize: 9, fontWeight: 700, color: 'var(--muted)', letterSpacing: '.04em' }}>
               ADMIN
             </div>
             <NavItem to="/users" icon="🔐" label="Users" />
+            <NavItem to="/activity" icon="📜" label="Activity Log" />
           </>
         )}
       </nav>
@@ -113,7 +114,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
         🚪 Sign out
       </button>
 
-      <div style={{ padding: '0 12px 12px', fontSize: 8, color: '#a09070' }}>
+      <div style={{ padding: '0 12px 12px', fontSize: 8, color: 'var(--muted)' }}>
         v1.0 · Waffle Media Tool
       </div>
     </aside>
@@ -126,7 +127,7 @@ function NavItem({ to, icon, label }) {
       display: 'flex', alignItems: 'center', gap: 10,
       margin: '1px 8px', padding: '10px 14px', borderRadius: 8,
       textDecoration: 'none', fontSize: 12, fontWeight: isActive ? 700 : 400,
-      color: isActive ? 'var(--text)' : '#6b5840',
+      color: isActive ? 'var(--text)' : 'var(--muted)',
       background: isActive ? 'var(--nav-active)' : 'transparent',
       borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent',
     })}>

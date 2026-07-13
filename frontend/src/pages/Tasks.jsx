@@ -3,6 +3,16 @@ import { api } from '../api'
 import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
+import { toCSV, downloadCSV } from '../lib/csv'
+
+const CSV_COLUMNS = [
+  { label: 'Title', value: 'title' },
+  { label: 'Status', value: 'status' },
+  { label: 'Priority', value: 'priority' },
+  { label: 'Assignee', value: 'assignee' },
+  { label: 'Due Date', value: 'due_date' },
+  { label: 'Notes', value: 'notes' },
+]
 
 const STATUSES = ['Not Started', 'Working On It', 'Stuck', 'Done']
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']
@@ -76,6 +86,7 @@ export default function Tasks() {
   }, [rows])
 
   function openNew() { setForm(EMPTY_FORM); setEditId(null); setModal('form') }
+  function exportCsv() { downloadCSV(`tasks-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, CSV_COLUMNS)) }
   function openEdit(t) {
     setForm({
       title: t.title || '', status: t.status || 'Not Started', priority: t.priority || 'Medium',
@@ -144,6 +155,7 @@ export default function Tasks() {
         <h1>Tasks</h1>
         <div className="search-bar">
           <input className="search-input" placeholder="🔍 Search tasks…" value={search} onChange={e => setSearch(e.target.value)} />
+          <button className="btn btn-ghost" onClick={exportCsv} disabled={!rows.length}>⬇️ Export</button>
           <button className="btn btn-primary" onClick={openNew}>＋ New Task</button>
         </div>
       </div>
