@@ -151,6 +151,27 @@ export default function Equipment() {
       </div>
 
       <div className="page-body">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
+          <button className="btn btn-ghost btn-sm" onClick={openPayment} disabled={!selected?.financed}>💵 Record Payment</button>
+          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
+          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} item(s) · £{totalValue.toFixed(2)} total</span>
+        </div>
+
+        {selected?.financed && (
+          <div className="card" style={{ marginBottom: 16, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 16 }}>💳</span>
+            <span style={{ fontSize: 13 }}>
+              {financeInfo
+                ? <>£{Number(financeInfo.paid_total || 0).toFixed(2)} paid of £{Number(selected.finance_amount || 0).toFixed(2)} financed</>
+                : 'Loading finance info…'}
+            </span>
+            {financeInfo && Number(financeInfo.paid_total || 0) >= Number(selected.finance_amount || 0) && Number(selected.finance_amount || 0) > 0 && (
+              <span className="badge badge-green">Paid off</span>
+            )}
+          </div>
+        )}
+
         {rows.length === 0 ? (
           <div className="card empty"><span className="icon">📷</span>No equipment found</div>
         ) : (
@@ -191,27 +212,6 @@ export default function Equipment() {
             })}
           </div>
         )}
-
-        {selected?.financed && (
-          <div className="card" style={{ marginTop: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>💳</span>
-            <span style={{ fontSize: 13 }}>
-              {financeInfo
-                ? <>£{Number(financeInfo.paid_total || 0).toFixed(2)} paid of £{Number(selected.finance_amount || 0).toFixed(2)} financed</>
-                : 'Loading finance info…'}
-            </span>
-            {financeInfo && Number(financeInfo.paid_total || 0) >= Number(selected.finance_amount || 0) && Number(selected.finance_amount || 0) > 0 && (
-              <span className="badge badge-green">Paid off</span>
-            )}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
-          <button className="btn btn-ghost btn-sm" onClick={openPayment} disabled={!selected?.financed}>💵 Record Payment</button>
-          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
-          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} item(s) · £{totalValue.toFixed(2)} total</span>
-        </div>
       </div>
 
       {(modal === 'new' || modal === 'edit') && (
