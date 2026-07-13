@@ -56,7 +56,6 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)', lineHeight: 1.2 }}>{company}</div>
           <div style={{ fontSize: 9, color: 'var(--muted)' }}>Business Suite</div>
         </div>
-        <NotificationBell />
         <button onClick={onClose} className="close-btn sidebar-close-only" aria-label="Close menu">×</button>
       </div>
 
@@ -103,6 +102,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
 
       <div style={{ height: 1, background: 'var(--input)', margin: '0 12px 6px' }} />
 
+      <NotificationBell />
       {(role === 'admin' || role === 'staff') && <NavItem to="/settings" icon="⚙️" label="Settings" />}
 
       <button onClick={logout} className="nav-item" style={{

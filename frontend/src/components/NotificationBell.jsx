@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
-import { toast } from './Toast'
+import { pushPopup } from './NotificationPopups'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
 const ENTITY_CONFIG = [
@@ -56,7 +56,7 @@ export default function NotificationBell() {
           }
           if (event) {
             const note = { id: `${cfg.type}-${id}-${event.kind}-${Date.now()}`, type: cfg.type, path: cfg.path, ts: Date.now(), ...event }
-            toast(note.label)
+            pushPopup(note)
             setNotifications(prev => {
               const next = [note, ...prev].slice(0, MAX_STORED)
               localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
@@ -100,12 +100,13 @@ export default function NotificationBell() {
 
   return (
     <div className="notif-bell-wrap" ref={wrapRef}>
-      <button className="notif-bell-btn" onClick={toggleOpen} aria-label="Notifications">
-        🔔
-        {unread > 0 && <span className="notif-badge">{unread > 9 ? '9+' : unread}</span>}
+      <button className="nav-item notif-bell-row" onClick={toggleOpen}>
+        <span style={{ fontSize: 16 }}>🔔</span>
+        Notifications
+        {unread > 0 && <span className="notif-badge-inline">{unread > 9 ? '9+' : unread}</span>}
       </button>
       {open && (
-        <div className="notif-panel">
+        <div className="notif-panel notif-panel-up">
           <div className="notif-panel-header">Notifications</div>
           {notifications.length === 0 ? (
             <div className="notif-empty">Nothing yet</div>

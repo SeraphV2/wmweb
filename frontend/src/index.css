@@ -222,28 +222,26 @@ a { text-decoration: none; color: inherit; }
   .calendar-dow-cell { font-size: 9px; }
 }
 
-/* ── Notification bell ────────────────────────────────────────────── */
-.notif-bell-wrap { position: relative; flex-shrink: 0; }
-.notif-bell-btn {
-  position: relative; background: var(--input); border: none; border-radius: 10px;
-  width: 34px; height: 34px; font-size: 15px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background .15s ease, transform .15s ease;
+/* ── Notification bell (sidebar nav row) ──────────────────────────── */
+.notif-bell-wrap { position: relative; }
+.notif-bell-row {
+  width: calc(100% - 16px); margin: 1px 8px; padding: 10px 14px; border-radius: 8px;
+  border: none; border-left: 3px solid transparent; background: transparent; color: #6b5840;
+  font-size: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;
 }
-.notif-bell-btn:hover { background: var(--nav-active); transform: translateY(-1px); }
-.notif-badge {
-  position: absolute; top: -3px; right: -3px; background: #dc2626; color: #fff;
-  font-size: 9px; font-weight: 700; border-radius: 10px; min-width: 16px; height: 16px;
-  display: flex; align-items: center; justify-content: center; padding: 0 4px;
-  border: 2px solid var(--sidebar);
+.notif-badge-inline {
+  margin-left: auto; background: #dc2626; color: #fff;
+  font-size: 10px; font-weight: 700; border-radius: 10px; min-width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center; padding: 0 5px;
 }
 .notif-panel {
-  position: absolute; top: calc(100% + 8px); left: 0; width: 290px; max-height: 380px;
+  position: absolute; top: calc(100% + 8px); left: 8px; right: 8px; max-height: 380px;
   overflow-y: auto; background: rgba(255,255,255,.97);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-soft); border-radius: var(--radius-md);
   box-shadow: var(--shadow-md); z-index: 700; animation: modalIn .18s ease;
 }
+.notif-panel-up { top: auto; bottom: calc(100% + 8px); }
 .notif-panel-header {
   padding: 10px 14px; font-size: 12px; font-weight: 700; color: var(--muted);
   border-bottom: 1px solid var(--border-soft); text-transform: uppercase; letter-spacing: .04em;
@@ -255,6 +253,40 @@ a { text-decoration: none; color: inherit; }
 .notif-item:hover { background: var(--nav-hover); }
 .notif-item:last-child { border-bottom: none; }
 .notif-empty { padding: 24px 16px; text-align: center; color: var(--muted); font-size: 12px; }
+
+/* ── Notification pop-out cards (distinct from plain toasts) ────────
+   Stacked higher than .toast-wrap so the two never overlap if both fire. */
+.notif-popup-wrap {
+  position: fixed; bottom: 110px; right: 24px; z-index: 9997;
+  display: flex; flex-direction: column-reverse; gap: 10px;
+  width: 320px; max-width: calc(100vw - 32px);
+}
+.notif-popup-card {
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-soft); border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md); padding: 12px 14px;
+  box-shadow: var(--shadow-md); display: flex; gap: 10px; align-items: flex-start;
+  cursor: pointer; animation: popupIn .25s cubic-bezier(.16,1,.3,1);
+}
+.notif-popup-card.leaving { animation: popupOut .2s ease forwards; }
+.notif-popup-icon { font-size: 20px; flex-shrink: 0; line-height: 1; margin-top: 1px; }
+.notif-popup-body { flex: 1; min-width: 0; }
+.notif-popup-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.notif-popup-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.notif-popup-close {
+  background: none; border: none; color: var(--muted); font-size: 16px;
+  cursor: pointer; padding: 2px 4px; border-radius: 6px; flex-shrink: 0;
+}
+.notif-popup-close:hover { background: var(--input); }
+@keyframes popupIn {
+  from { opacity: 0; transform: translateX(50px) scale(.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes popupOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(50px); }
+}
 
 /* ── Modal (glass) ─────────────────────────────────────────────────── */
 .modal-overlay {

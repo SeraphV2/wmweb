@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Sidebar from './Sidebar'
 import Toast from './Toast'
+import NotificationPopups from './NotificationPopups'
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -18,6 +19,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <Toast />
+      <NotificationPopups />
     </div>
   )
 }
