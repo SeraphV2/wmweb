@@ -4,19 +4,9 @@ import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
+import { CLIENT_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const EMPTY_FORM = { name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', notes: '' }
-const CSV_COLUMNS = [
-  { label: 'Name', value: 'name' },
-  { label: 'Email', value: 'email' },
-  { label: 'Phone', value: 'phone' },
-  { label: 'Address', value: 'address' },
-  { label: 'City', value: 'city' },
-  { label: 'State', value: 'state' },
-  { label: 'ZIP', value: 'zip' },
-  { label: 'Projects', value: 'project_count' },
-  { label: 'Notes', value: 'notes' },
-]
 
 export default function Clients() {
   const [rows, setRows] = useState([])

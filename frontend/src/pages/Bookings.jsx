@@ -4,21 +4,7 @@ import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
-
-const CSV_COLUMNS = [
-  { label: 'Title', value: 'title' },
-  { label: 'Client', value: 'client_name' },
-  { label: 'Type', value: 'type' },
-  { label: 'Status', value: 'status' },
-  { label: 'Date', value: 'date' },
-  { label: 'Start Time', value: 'start_time' },
-  { label: 'End Time', value: 'end_time' },
-  { label: 'Location', value: 'location' },
-  { label: 'Package', value: 'package' },
-  { label: 'Rate', value: 'rate' },
-  { label: 'Deposit', value: 'deposit' },
-  { label: 'Notes', value: 'notes' },
-]
+import { BOOKING_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const STATUSES = ['Inquiry', 'Confirmed', 'In Progress', 'Completed', 'Cancelled']
 const TYPES = ['Photography', 'Videography', 'Both', 'Other']

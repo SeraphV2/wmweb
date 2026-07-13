@@ -4,21 +4,10 @@ import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
+import { EQUIPMENT_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const CONDITIONS = ['Excellent', 'Good', 'Fair', 'Poor', 'Damaged']
 const EMPTY = { name: '', category: '', brand: '', model_name: '', serial_number: '', purchase_date: '', purchase_price: '', condition: 'Excellent', insured: false, insurance_value: '', notes: '' }
-const CSV_COLUMNS = [
-  { label: 'Name', value: 'name' },
-  { label: 'Category', value: 'category' },
-  { label: 'Brand', value: 'brand' },
-  { label: 'Model', value: 'model_name' },
-  { label: 'Serial', value: 'serial_number' },
-  { label: 'Purchase Date', value: 'purchase_date' },
-  { label: 'Purchase Price', value: 'purchase_price' },
-  { label: 'Condition', value: 'condition' },
-  { label: 'Insured', value: r => r.insured ? 'Yes' : 'No' },
-  { label: 'Insurance Value', value: 'insurance_value' },
-]
 
 export default function Equipment() {
   const [rows, setRows] = useState([])

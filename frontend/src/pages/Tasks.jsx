@@ -4,15 +4,7 @@ import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
-
-const CSV_COLUMNS = [
-  { label: 'Title', value: 'title' },
-  { label: 'Status', value: 'status' },
-  { label: 'Priority', value: 'priority' },
-  { label: 'Assignee', value: 'assignee' },
-  { label: 'Due Date', value: 'due_date' },
-  { label: 'Notes', value: 'notes' },
-]
+import { TASK_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const STATUSES = ['Not Started', 'Working On It', 'Stuck', 'Done']
 const PRIORITIES = ['Low', 'Medium', 'High', 'Critical']

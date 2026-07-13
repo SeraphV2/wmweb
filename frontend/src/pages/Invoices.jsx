@@ -4,21 +4,10 @@ import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
+import { INVOICE_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const STATUSES = ['Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled']
 const BADGE = { Paid: 'badge-green', Draft: 'badge-gray', Sent: 'badge-blue', Overdue: 'badge-red', Cancelled: 'badge-gray' }
-const CSV_COLUMNS = [
-  { label: 'Invoice #', value: 'invoice_number' },
-  { label: 'Client', value: 'client_name' },
-  { label: 'Project', value: 'project_title' },
-  { label: 'Issue Date', value: 'issue_date' },
-  { label: 'Due Date', value: 'due_date' },
-  { label: 'Status', value: 'status' },
-  { label: 'Subtotal', value: 'subtotal' },
-  { label: 'Tax', value: 'tax_amount' },
-  { label: 'Discount', value: 'discount' },
-  { label: 'Total', value: 'total' },
-]
 
 const EMPTY_ITEM = { description: '', quantity: 1, rate: '', amount: 0 }
 const EMPTY_FORM = {

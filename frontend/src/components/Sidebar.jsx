@@ -97,6 +97,7 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
             </div>
             <NavItem to="/users" icon="🔐" label="Users" />
             <NavItem to="/activity" icon="📜" label="Activity Log" />
+            <NavItem to="/admin" icon="🛠️" label="Admin Tools" />
           </>
         )}
       </nav>

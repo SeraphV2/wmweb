@@ -4,17 +4,10 @@ import Modal from '../components/Modal'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { toCSV, downloadCSV } from '../lib/csv'
+import { EXPENSE_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const PAYMENT_METHODS = ['Cash', 'Credit Card', 'Debit Card', 'Bank Transfer', 'PayPal', 'Other']
 const EMPTY = { project_id: '', category: '', description: '', amount: '', date: '', payment_method: '', notes: '' }
-const CSV_COLUMNS = [
-  { label: 'Date', value: 'date' },
-  { label: 'Category', value: 'category' },
-  { label: 'Description', value: 'description' },
-  { label: 'Project', value: 'project_title' },
-  { label: 'Method', value: 'payment_method' },
-  { label: 'Amount', value: 'amount' },
-]
 
 export default function Expenses() {
   const [rows, setRows] = useState([])
