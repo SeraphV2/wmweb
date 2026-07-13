@@ -64,6 +64,9 @@ export const api = {
   // Activity log (admin only)
   getActivity: () => req('GET', '/api/activity/'),
 
+  // Admin overview (admin only)
+  getAdminHealth: () => req('GET', '/api/admin/health'),
+
   // Dashboard
   dashStats:      () => req('GET', '/api/dashboard/stats'),
   dashUpcoming:   () => req('GET', '/api/dashboard/upcoming'),

@@ -754,6 +754,22 @@ class Database:
             "SELECT * FROM activity_log ORDER BY created_at DESC LIMIT %s", (limit,))
         return self._rows()
 
+    # ── Admin overview ───────────────────────────────────────────────────────
+
+    def get_record_counts(self):
+        tables = ['clients', 'projects', 'invoices', 'expenses', 'equipment', 'tasks', 'users']
+        counts = {}
+        for t in tables:
+            self._ex(f"SELECT COUNT(*) AS c FROM {t}")
+            counts[t] = self._row()['c']
+        return counts
+
+    def get_top_active_users(self, limit=5):
+        self._ex(
+            "SELECT username, COUNT(*) AS c FROM activity_log "
+            "GROUP BY username ORDER BY c DESC LIMIT %s", (limit,))
+        return self._rows()
+
     def close(self):
         if self._mysql:
             try:
