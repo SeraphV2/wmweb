@@ -87,6 +87,10 @@ export default function Expenses() {
       </div>
 
       <div className="page-body">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
+          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
+        </div>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {rows.length === 0 ? (
             <div className="empty"><span className="icon">💰</span>No expenses found</div>
@@ -113,10 +117,6 @@ export default function Expenses() {
             </table>
             </div>
           )}
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
-          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
         </div>
       </div>
 

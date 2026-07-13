@@ -187,6 +187,11 @@ export default function Bookings() {
           </div>
         ) : (
         <>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost btn-sm" onClick={() => openEdit()} disabled={!selected}>✏️ Edit</button>
+          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
+          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} booking(s)</span>
+        </div>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {rows.length === 0 ? (
             <div className="empty"><span className="icon">📅</span>No bookings found</div>
@@ -209,11 +214,6 @@ export default function Bookings() {
             </table>
             </div>
           )}
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => openEdit()} disabled={!selected}>✏️ Edit</button>
-          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
-          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} booking(s)</span>
         </div>
         </>
         )}

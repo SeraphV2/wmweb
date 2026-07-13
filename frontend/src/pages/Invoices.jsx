@@ -143,6 +143,19 @@ export default function Invoices() {
       </div>
 
       <div className="page-body">
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
+          <button className="btn btn-ghost btn-sm" onClick={openPayment} disabled={!selected}>💵 Record Payment</button>
+          {selected && (
+            <>
+              <button className="btn btn-ghost btn-sm" onClick={() => changeStatus('Sent')} disabled={!selected}>📤 Mark Sent</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => changeStatus('Paid')} disabled={!selected}>✅ Mark Paid</button>
+            </>
+          )}
+          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
+          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} invoice(s)</span>
+        </div>
+
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {rows.length === 0 ? (
             <div className="empty"><span className="icon">🧾</span>No invoices found</div>
@@ -166,19 +179,6 @@ export default function Invoices() {
             </table>
             </div>
           )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
-          <button className="btn btn-ghost btn-sm" onClick={openPayment} disabled={!selected}>💵 Record Payment</button>
-          {selected && (
-            <>
-              <button className="btn btn-ghost btn-sm" onClick={() => changeStatus('Sent')} disabled={!selected}>📤 Mark Sent</button>
-              <button className="btn btn-ghost btn-sm" onClick={() => changeStatus('Paid')} disabled={!selected}>✅ Mark Paid</button>
-            </>
-          )}
-          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
-          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} invoice(s)</span>
         </div>
       </div>
 

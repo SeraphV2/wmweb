@@ -93,6 +93,13 @@ export default function Clients() {
       </div>
 
       <div className="page-body">
+        {/* Action bar */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
+          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected || deleting}>🗑 Delete</button>
+          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} client(s)</span>
+        </div>
+
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {rows.length === 0 ? (
             <div className="empty">
@@ -123,13 +130,6 @@ export default function Clients() {
             </table>
             </div>
           )}
-        </div>
-
-        {/* Action bar */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
-          <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected || deleting}>🗑 Delete</button>
-          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} client(s)</span>
         </div>
       </div>
 
