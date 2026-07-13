@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { api } from '../api'
 import Modal from '../components/Modal'
 import Combobox from '../components/Combobox'
@@ -26,6 +26,7 @@ const EMPTY = {
   financed: false, finance_amount: '', notes: '',
 }
 const EMPTY_PAYMENT = { amount: '', date: '', method: '', reference: '', notes: '' }
+const CATEGORY_COLORS = ['#f59e0b', '#3b82f6', '#22c55e', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
 
 export default function Equipment() {
   const [rows, setRows] = useState([])
@@ -121,6 +122,15 @@ export default function Equipment() {
   }
 
   const totalValue = rows.reduce((s, r) => s + Number(r.purchase_price || 0), 0)
+  const categoryGroups = useMemo(() => {
+    const map = {}
+    for (const r of rows) {
+      const cat = r.category || 'Uncategorized'
+      if (!map[cat]) map[cat] = []
+      map[cat].push(r)
+    }
+    return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [rows])
   const categoryOptions = [...new Set([...DEFAULT_CATEGORIES, ...cats])].sort((a, b) => a.localeCompare(b))
   const brandOptions = [...new Set([...DEFAULT_BRANDS, ...brands])].sort((a, b) => a.localeCompare(b))
   const modelOptions = [...new Set([...(MODELS_BY_BRAND[form.brand] || []), ...models])].sort((a, b) => a.localeCompare(b))
@@ -141,35 +151,46 @@ export default function Equipment() {
       </div>
 
       <div className="page-body">
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-          {rows.length === 0 ? (
-            <div className="empty"><span className="icon">📷</span>No equipment found</div>
-          ) : (
-            <div className="tbl-wrap">
-            <table className="tbl">
-              <thead><tr><th>Name</th><th>Category</th><th>Brand / Model</th><th>Serial</th><th>Condition</th><th>Insured</th><th>Financed</th><th style={{ textAlign: 'right' }}>Value</th></tr></thead>
-              <tbody>
-                {rows.map(r => (
-                  <tr key={r.id} className={selected?.id === r.id ? 'selected' : ''} style={{ cursor: 'pointer' }} onClick={() => setSelected(selected?.id === r.id ? null : r)}>
-                    <td style={{ fontWeight: 600 }}>{r.name}</td>
-                    <td>{r.category || '—'}</td>
-                    <td style={{ color: 'var(--muted)', fontSize: 12 }}>{[r.brand, r.model_name].filter(Boolean).join(' · ') || '—'}</td>
-                    <td style={{ fontSize: 12 }}>{r.serial_number || '—'}</td>
-                    <td><span className={`badge ${r.condition === 'Excellent' || r.condition === 'Good' ? 'badge-green' : r.condition === 'Fair' ? 'badge-amber' : 'badge-red'}`}>{r.condition}</span></td>
-                    <td style={{ textAlign: 'center' }}>{r.insured ? '✅' : '—'}</td>
-                    <td style={{ textAlign: 'center' }}>{r.financed ? '💳' : '—'}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>£{Number(r.purchase_price || 0).toFixed(2)}</td>
-                  </tr>
-                ))}
-                <tr>
-                  <td colSpan={7} style={{ textAlign: 'right', fontWeight: 700, color: 'var(--muted)', fontSize: 12 }}>Total value:</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700 }}>£{totalValue.toFixed(2)}</td>
-                </tr>
-              </tbody>
-            </table>
-            </div>
-          )}
-        </div>
+        {rows.length === 0 ? (
+          <div className="card empty"><span className="icon">📷</span>No equipment found</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {categoryGroups.map(([cat, items], gi) => {
+              const catTotal = items.reduce((s, r) => s + Number(r.purchase_price || 0), 0)
+              return (
+                <div key={cat} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div style={{
+                    padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 10,
+                    borderLeft: `4px solid ${CATEGORY_COLORS[gi % CATEGORY_COLORS.length]}`,
+                    background: 'var(--input)', borderBottom: '1px solid var(--border-soft)',
+                  }}>
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>{cat}</span>
+                    <span style={{ fontSize: 11, color: 'var(--muted)' }}>{items.length} item{items.length === 1 ? '' : 's'}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700 }}>£{catTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="tbl-wrap">
+                    <table className="tbl">
+                      <thead><tr><th>Name</th><th>Brand / Model</th><th>Serial</th><th>Condition</th><th>Insured</th><th>Financed</th><th style={{ textAlign: 'right' }}>Value</th></tr></thead>
+                      <tbody>
+                        {items.map(r => (
+                          <tr key={r.id} className={selected?.id === r.id ? 'selected' : ''} style={{ cursor: 'pointer' }} onClick={() => setSelected(selected?.id === r.id ? null : r)}>
+                            <td style={{ fontWeight: 600 }}>{r.name}</td>
+                            <td style={{ color: 'var(--muted)', fontSize: 12 }}>{[r.brand, r.model_name].filter(Boolean).join(' · ') || '—'}</td>
+                            <td style={{ fontSize: 12 }}>{r.serial_number || '—'}</td>
+                            <td><span className={`badge ${r.condition === 'Excellent' || r.condition === 'Good' ? 'badge-green' : r.condition === 'Fair' ? 'badge-amber' : 'badge-red'}`}>{r.condition}</span></td>
+                            <td style={{ textAlign: 'center' }}>{r.insured ? '✅' : '—'}</td>
+                            <td style={{ textAlign: 'center' }}>{r.financed ? '💳' : '—'}</td>
+                            <td style={{ textAlign: 'right', fontWeight: 600 }}>£{Number(r.purchase_price || 0).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         {selected?.financed && (
           <div className="card" style={{ marginTop: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -189,7 +210,7 @@ export default function Equipment() {
           <button className="btn btn-ghost btn-sm" onClick={openEdit} disabled={!selected}>✏️ Edit</button>
           <button className="btn btn-ghost btn-sm" onClick={openPayment} disabled={!selected?.financed}>💵 Record Payment</button>
           <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected}>🗑 Delete</button>
-          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} item(s)</span>
+          <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} item(s) · £{totalValue.toFixed(2)} total</span>
         </div>
       </div>
 
