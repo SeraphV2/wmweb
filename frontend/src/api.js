@@ -145,4 +145,28 @@ export const api = {
   // Settings
   getSettings:    () => req('GET', '/api/settings/'),
   updateSettings: (data) => req('PUT', '/api/settings/', data),
+
+  // Social media
+  uploadsUrl: (path) => `${BASE}/uploads/${path}`,
+  getSocialAccounts: () => req('GET', '/api/social/accounts'),
+  getSocialConnectUrl: (platform) => req('GET', `/api/social/connect/${platform}`),
+  disconnectSocial: (id) => req('DELETE', `/api/social/accounts/${id}`),
+  getSocialPosts: () => req('GET', '/api/social/posts'),
+  createSocialPost: async ({ content, platforms, image }) => {
+    const form = new FormData()
+    form.append('content', content)
+    form.append('platforms', platforms.join(','))
+    if (image) form.append('image', image)
+    const t = token()
+    const res = await fetch(`${BASE}/api/social/posts`, {
+      method: 'POST',
+      headers: t ? { Authorization: `Bearer ${t}` } : {},
+      body: form,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }))
+      throw new Error(err.detail || 'Request failed')
+    }
+    return res.json()
+  },
 }

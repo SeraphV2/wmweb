@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Tasks from './pages/Tasks'
 import Clients from './pages/Clients'
 import Bookings from './pages/Bookings'
+import SocialMedia from './pages/SocialMedia'
 import Invoices from './pages/Invoices'
 import Expenses from './pages/Expenses'
 import Equipment from './pages/Equipment'
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="tasks"      element={<Tasks />} />
           <Route path="clients"    element={<Clients />} />
           <Route path="bookings"   element={<Bookings />} />
+          <Route path="social"     element={<SocialMedia />} />
           <Route path="invoices"   element={<Invoices />} />
           <Route path="expenses"   element={<Expenses />} />
           <Route path="equipment"  element={<Equipment />} />

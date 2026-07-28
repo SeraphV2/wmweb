@@ -1,7 +1,9 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.staticfiles import StaticFiles
 
 from auth import create_token, ADMIN_PASSWORD, hash_password, verify_password
 from deps import get_db, get_current_user
@@ -9,6 +11,8 @@ from database import Database
 
 from routers import clients, projects, invoices, expenses, equipment, dashboard, reports, settings, tasks, activity, admin
 from routers import users as users_router
+from routers import wix_inbound
+from routers import social, social_oauth
 
 
 @asynccontextmanager
@@ -36,6 +40,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 auth_dep = [Depends(get_current_user)]
 
@@ -72,6 +80,16 @@ app.include_router(settings.router,       prefix="/api/settings",   dependencies
 app.include_router(users_router.router,   prefix="/api/users",      dependencies=auth_dep)
 app.include_router(activity.router,       prefix="/api/activity",   dependencies=auth_dep)
 app.include_router(admin.router,          prefix="/api/admin",      dependencies=auth_dep)
+app.include_router(social.router,         prefix="/api/social",     dependencies=auth_dep)
+
+# No auth_dep - this is called server-to-server by Wix (Velo), not by a
+# logged-in user. Protected by a shared secret checked inside the handler.
+app.include_router(wix_inbound.router,    prefix="/api/wix")
+
+# No auth_dep - these are hit by a direct browser redirect from Meta/LinkedIn
+# after OAuth consent, so no Authorization header is present. Protected by
+# the one-time `state` value instead (see routers/social_oauth.py).
+app.include_router(social_oauth.router,   prefix="/api/social")
 
 
 @app.get("/api/health")

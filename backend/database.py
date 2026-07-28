@@ -114,18 +114,19 @@ class Database:
                 created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
             """CREATE TABLE IF NOT EXISTS clients (
-                id         INT AUTO_INCREMENT PRIMARY KEY,
-                first_name VARCHAR(255) NOT NULL DEFAULT '',
-                last_name  VARCHAR(255) DEFAULT '',
-                email      VARCHAR(255),
-                phone      VARCHAR(50),
-                address    VARCHAR(255),
-                city       VARCHAR(100),
-                state      VARCHAR(100),
-                zip        VARCHAR(20),
-                country    VARCHAR(100) DEFAULT '',
-                notes      TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                id             INT AUTO_INCREMENT PRIMARY KEY,
+                first_name     VARCHAR(255) NOT NULL DEFAULT '',
+                last_name      VARCHAR(255) DEFAULT '',
+                email          VARCHAR(255),
+                phone          VARCHAR(50),
+                address        VARCHAR(255),
+                city           VARCHAR(100),
+                state          VARCHAR(100),
+                zip            VARCHAR(20),
+                country        VARCHAR(100) DEFAULT '',
+                wix_contact_id VARCHAR(64) DEFAULT NULL,
+                notes          TEXT,
+                created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
             """CREATE TABLE IF NOT EXISTS projects (
                 id         INT AUTO_INCREMENT PRIMARY KEY,
@@ -146,6 +147,7 @@ class Database:
             """CREATE TABLE IF NOT EXISTS invoices (
                 id             INT AUTO_INCREMENT PRIMARY KEY,
                 invoice_number VARCHAR(50) UNIQUE,
+                wix_invoice_id VARCHAR(64) DEFAULT NULL,
                 project_id     INT,
                 client_id      INT,
                 issue_date     DATE,
@@ -236,6 +238,32 @@ class Database:
                 label       VARCHAR(255),
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""",
+            """CREATE TABLE IF NOT EXISTS social_accounts (
+                id            INT AUTO_INCREMENT PRIMARY KEY,
+                platform      VARCHAR(20) NOT NULL,
+                account_name  VARCHAR(255) DEFAULT '',
+                external_id   VARCHAR(128) DEFAULT '',
+                access_token  TEXT,
+                token_expires TIMESTAMP NULL DEFAULT NULL,
+                connected_by  VARCHAR(100) DEFAULT '',
+                created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS social_posts (
+                id          INT AUTO_INCREMENT PRIMARY KEY,
+                content     TEXT,
+                image_path  VARCHAR(500) DEFAULT NULL,
+                created_by  VARCHAR(100) DEFAULT '',
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
+            """CREATE TABLE IF NOT EXISTS social_post_targets (
+                id             INT AUTO_INCREMENT PRIMARY KEY,
+                post_id        INT NOT NULL,
+                platform       VARCHAR(20) NOT NULL,
+                status         VARCHAR(20) DEFAULT 'pending',
+                remote_post_id VARCHAR(128) DEFAULT NULL,
+                error          TEXT,
+                created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )""",
         ]
         for stmt in stmts:
             self._ex(stmt)
@@ -252,6 +280,8 @@ class Database:
             # than dropped, but it's still NOT NULL with no default from its original
             # definition - relax that so inserts that no longer set it don't fail.
             "ALTER TABLE clients MODIFY COLUMN name VARCHAR(255) NULL DEFAULT ''",
+            "ALTER TABLE clients ADD COLUMN wix_contact_id VARCHAR(64) DEFAULT NULL",
+            "ALTER TABLE invoices ADD COLUMN wix_invoice_id VARCHAR(64) DEFAULT NULL",
         ]:
             try:
                 self._mc.execute(stmt)
@@ -367,12 +397,29 @@ class Database:
 
     def add_client(self, data):
         self._ex(
-            "INSERT INTO clients (first_name,last_name,email,phone,address,city,state,zip,country,notes) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "INSERT INTO clients (first_name,last_name,email,phone,address,city,state,zip,country,wix_contact_id,notes) "
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
             (data['first_name'], data.get('last_name',''), data.get('email',''), data.get('phone',''),
              data.get('address',''), data.get('city',''), data.get('state',''),
-             data.get('zip',''), data.get('country',''), data.get('notes','')))
+             data.get('zip',''), data.get('country',''), data.get('wix_contact_id') or None, data.get('notes','')))
         return self._mc.lastrowid
+
+    def find_client_by_wix_contact(self, contact_id):
+        if not contact_id:
+            return None
+        self._ex("SELECT id FROM clients WHERE wix_contact_id=%s LIMIT 1", (contact_id,))
+        row = self._row()
+        return row['id'] if row else None
+
+    def find_client_by_email(self, email):
+        if not email:
+            return None
+        self._ex("SELECT id FROM clients WHERE LOWER(email)=LOWER(%s) LIMIT 1", (email,))
+        row = self._row()
+        return row['id'] if row else None
+
+    def set_client_wix_contact_id(self, cid, contact_id):
+        self._ex("UPDATE clients SET wix_contact_id=%s WHERE id=%s", (contact_id, cid))
 
     def update_client(self, cid, data):
         self._ex(
@@ -493,10 +540,11 @@ class Database:
 
     def add_invoice(self, data, items):
         self._ex(
-            "INSERT INTO invoices (invoice_number,project_id,client_id,issue_date,due_date,"
+            "INSERT INTO invoices (invoice_number,wix_invoice_id,project_id,client_id,issue_date,due_date,"
             "status,subtotal,tax_rate,tax_amount,discount,total,notes) "
-            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-            (data['invoice_number'], data.get('project_id') or None, data['client_id'],
+            "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            (data['invoice_number'], data.get('wix_invoice_id') or None,
+             data.get('project_id') or None, data['client_id'],
              data.get('issue_date') or None, data.get('due_date') or None,
              data.get('status','Draft'), data.get('subtotal',0), data.get('tax_rate',0),
              data.get('tax_amount',0), data.get('discount',0), data.get('total',0),
@@ -530,6 +578,17 @@ class Database:
 
     def update_invoice_status(self, iid, status):
         self._ex("UPDATE invoices SET status=%s WHERE id=%s", (status, iid))
+
+    def get_invoice_by_wix_id(self, wix_invoice_id):
+        if not wix_invoice_id:
+            return None
+        self._ex("SELECT id FROM invoices WHERE wix_invoice_id=%s LIMIT 1", (wix_invoice_id,))
+        row = self._row()
+        return row['id'] if row else None
+
+    def invoice_number_taken(self, number):
+        self._ex("SELECT id FROM invoices WHERE invoice_number=%s LIMIT 1", (number,))
+        return self._row() is not None
 
     def delete_invoice(self, iid):
         self._ex("DELETE FROM invoice_items WHERE invoice_id=%s", (iid,))
@@ -838,6 +897,61 @@ class Database:
         self._ex(
             "SELECT * FROM activity_log ORDER BY created_at DESC LIMIT %s", (limit,))
         return self._rows()
+
+    # ── Social media ─────────────────────────────────────────────────────────
+
+    def get_social_accounts(self):
+        self._ex("SELECT id, platform, account_name, external_id, token_expires, "
+                  "connected_by, created_at FROM social_accounts ORDER BY platform")
+        return self._rows()
+
+    def get_social_account_by_platform(self, platform):
+        self._ex("SELECT * FROM social_accounts WHERE platform=%s LIMIT 1", (platform,))
+        return self._row()
+
+    def upsert_social_account(self, platform, account_name, external_id, access_token,
+                               token_expires, connected_by):
+        existing = self.get_social_account_by_platform(platform)
+        if existing:
+            self._ex(
+                "UPDATE social_accounts SET account_name=%s, external_id=%s, "
+                "access_token=%s, token_expires=%s, connected_by=%s WHERE id=%s",
+                (account_name, external_id, access_token, token_expires, connected_by, existing['id']))
+            return existing['id']
+        self._ex(
+            "INSERT INTO social_accounts (platform, account_name, external_id, access_token, "
+            "token_expires, connected_by) VALUES (%s,%s,%s,%s,%s,%s)",
+            (platform, account_name, external_id, access_token, token_expires, connected_by))
+        return self._mc.lastrowid
+
+    def delete_social_account(self, aid):
+        self._ex("DELETE FROM social_accounts WHERE id=%s", (aid,))
+
+    def add_social_post(self, content, image_path, created_by):
+        self._ex(
+            "INSERT INTO social_posts (content, image_path, created_by) VALUES (%s,%s,%s)",
+            (content, image_path, created_by))
+        return self._mc.lastrowid
+
+    def add_social_post_target(self, post_id, platform, status='pending', remote_post_id=None, error=None):
+        self._ex(
+            "INSERT INTO social_post_targets (post_id, platform, status, remote_post_id, error) "
+            "VALUES (%s,%s,%s,%s,%s)",
+            (post_id, platform, status, remote_post_id, error))
+        return self._mc.lastrowid
+
+    def update_social_post_target(self, tid, status, remote_post_id=None, error=None):
+        self._ex(
+            "UPDATE social_post_targets SET status=%s, remote_post_id=%s, error=%s WHERE id=%s",
+            (status, remote_post_id, error, tid))
+
+    def get_social_posts(self, limit=50):
+        self._ex("SELECT * FROM social_posts ORDER BY created_at DESC LIMIT %s", (limit,))
+        posts = self._rows()
+        for p in posts:
+            self._ex("SELECT * FROM social_post_targets WHERE post_id=%s", (p['id'],))
+            p['targets'] = self._rows()
+        return posts
 
     # ── Admin overview ───────────────────────────────────────────────────────
 

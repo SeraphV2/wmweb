@@ -8,6 +8,7 @@ const NAV = [
   { section: null,      to: '/tasks',     icon: '✅', label: 'Tasks' },
   { section: null,      to: '/clients',   icon: '👥', label: 'Clients' },
   { section: null,      to: '/bookings',  icon: '📅', label: 'Bookings' },
+  { section: null,      to: '/social',    icon: '📣', label: 'Social Media' },
   { section: 'FINANCE', to: '/invoices',  icon: '🧾', label: 'Invoices' },
   { section: null,      to: '/expenses',  icon: '💰', label: 'Expenses' },
   { section: 'MANAGE',  to: '/equipment', icon: '📷', label: 'Equipment' },

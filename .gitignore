@@ -3,6 +3,7 @@ __pycache__/
 *.pyo
 .env
 backend/db_config.json
+backend/uploads/
 node_modules/
 frontend/dist/
 .DS_Store

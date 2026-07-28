@@ -24,6 +24,24 @@ services:
         sync: false
       - key: WIX_SITE_ID
         sync: false
+      - key: WIX_BRIDGE_SECRET
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_REDIRECT_URI
+        sync: false
+      - key: LINKEDIN_CLIENT_ID
+        sync: false
+      - key: LINKEDIN_CLIENT_SECRET
+        sync: false
+      - key: LINKEDIN_REDIRECT_URI
+        sync: false
 
   - type: web
     runtime: static
