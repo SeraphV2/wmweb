@@ -51,6 +51,19 @@ import secrets
 import time
 import requests
 
+
+def _check(res):
+    """Like res.raise_for_status(), but folds the response body into the
+    exception message - the plain requests.HTTPError message is just the
+    status code and doesn't include the platform's actual error reason,
+    which makes failures shown in the UI useless for debugging without
+    digging through server logs."""
+    try:
+        res.raise_for_status()
+    except requests.HTTPError as e:
+        raise requests.HTTPError(f"{e} - {res.text[:400]}", response=res) from None
+    return res
+
 META_APP_ID = os.environ.get('META_APP_ID', '')
 META_APP_SECRET = os.environ.get('META_APP_SECRET', '')
 META_REDIRECT_URI = os.environ.get('META_REDIRECT_URI', '')
@@ -62,8 +75,13 @@ LINKEDIN_CLIENT_ID = os.environ.get('LINKEDIN_CLIENT_ID', '')
 LINKEDIN_CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
 LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 LINKEDIN_API_BASE = 'https://api.linkedin.com/v2'
+LINKEDIN_REST_BASE = 'https://api.linkedin.com/rest'
 LINKEDIN_OAUTH_BASE = 'https://www.linkedin.com/oauth/v2'
 LINKEDIN_SCOPES = 'openid profile w_member_social'
+# LinkedIn's versioned REST API requires a calendar-month version header.
+# Bump this periodically (LinkedIn supports the last ~12 months) - see
+# https://learn.microsoft.com/en-us/linkedin/marketing/versioning
+LINKEDIN_VERSION = '202502'
 
 APP_PUBLIC_URL = os.environ.get('APP_PUBLIC_URL', '').rstrip('/')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '').rstrip('/')
@@ -121,7 +139,7 @@ def meta_exchange_code(code):
         'redirect_uri': META_REDIRECT_URI,
         'code': code,
     }, timeout=15)
-    res.raise_for_status()
+    _check(res)
     short_token = res.json()['access_token']
 
     res = requests.get(f"{META_API_BASE}/oauth/access_token", params={
@@ -130,7 +148,7 @@ def meta_exchange_code(code):
         'client_secret': META_APP_SECRET,
         'fb_exchange_token': short_token,
     }, timeout=15)
-    res.raise_for_status()
+    _check(res)
     data = res.json()
     return data['access_token'], data.get('expires_in')
 
@@ -142,7 +160,7 @@ def meta_list_pages(user_token):
         'access_token': user_token,
         'fields': 'id,name,access_token,instagram_business_account{id,username}',
     }, timeout=15)
-    res.raise_for_status()
+    _check(res)
     return res.json().get('data', [])
 
 
@@ -155,7 +173,7 @@ def publish_facebook(page_id, page_token, message, image_url=None):
         res = requests.post(f"{META_API_BASE}/{page_id}/feed", data={
             'message': message, 'access_token': page_token,
         }, timeout=30)
-    res.raise_for_status()
+    _check(res)
     data = res.json()
     return data.get('post_id') or data.get('id')
 
@@ -166,13 +184,13 @@ def publish_instagram(ig_user_id, page_token, caption, image_url):
     res = requests.post(f"{META_API_BASE}/{ig_user_id}/media", data={
         'image_url': image_url, 'caption': caption, 'access_token': page_token,
     }, timeout=30)
-    res.raise_for_status()
+    _check(res)
     creation_id = res.json()['id']
 
     res = requests.post(f"{META_API_BASE}/{ig_user_id}/media_publish", data={
         'creation_id': creation_id, 'access_token': page_token,
     }, timeout=30)
-    res.raise_for_status()
+    _check(res)
     return res.json()['id']
 
 
@@ -194,7 +212,7 @@ def linkedin_exchange_code(code):
         'client_id': LINKEDIN_CLIENT_ID,
         'client_secret': LINKEDIN_CLIENT_SECRET,
     }, headers={'Content-Type': 'application/x-www-form-urlencoded'}, timeout=15)
-    res.raise_for_status()
+    _check(res)
     data = res.json()
     return data['access_token'], data.get('expires_in')
 
@@ -203,38 +221,44 @@ def linkedin_get_profile(token):
     """Returns (person_urn, display_name) for the connected LinkedIn member."""
     res = requests.get(f"{LINKEDIN_API_BASE}/userinfo",
                         headers={'Authorization': f'Bearer {token}'}, timeout=15)
-    res.raise_for_status()
+    _check(res)
     data = res.json()
     return f"urn:li:person:{data['sub']}", data.get('name', '')
 
 
 def publish_linkedin(author_urn, token, text, image_url=None):
-    """Posts as author_urn (a person or organization URN) via the UGC Posts
-    API. Image posts use LinkedIn's simplified 'article'-style share since
-    downloading+re-uploading the binary via the Assets API needs an extra
-    round trip this app doesn't do yet - images render as a link preview
-    card rather than a native photo. Text-only posts render natively."""
-    share_content = {
-        'shareCommentary': {'text': text},
-        'shareMediaCategory': 'ARTICLE' if image_url else 'NONE',
-    }
-    if image_url:
-        share_content['media'] = [{
-            'status': 'READY',
-            'originalUrl': image_url,
-        }]
+    """Posts as author_urn via LinkedIn's versioned Posts API (the legacy
+    /v2/ugcPosts endpoint this used to call isn't reachable for apps created
+    after LinkedIn's 2023 API versioning rollout - it fails with a plain
+    403/404 rather than a helpful error). Image posts use the 'article'
+    content type (a link-preview card built from image_url) rather than a
+    native uploaded photo, since a true native image needs an extra
+    register-upload-finalize round trip via the Images API that this app
+    doesn't do yet. Text-only posts render natively either way."""
     body = {
         'author': author_urn,
+        'commentary': text,
+        'visibility': 'PUBLIC',
+        'distribution': {
+            'feedDistribution': 'MAIN_FEED',
+            'targetEntities': [],
+            'thirdPartyDistributionChannels': [],
+        },
         'lifecycleState': 'PUBLISHED',
-        'specificContent': {'com.linkedin.ugc.ShareContent': share_content},
-        'visibility': {'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC'},
+        'isReshareDisabledByAuthor': False,
     }
-    res = requests.post(f"{LINKEDIN_API_BASE}/ugcPosts", json=body, headers={
+    if image_url:
+        body['content'] = {'article': {'source': image_url}}
+    res = requests.post(f"{LINKEDIN_REST_BASE}/posts", json=body, headers={
         'Authorization': f'Bearer {token}',
+        'LinkedIn-Version': LINKEDIN_VERSION,
         'X-Restli-Protocol-Version': '2.0.0',
+        'Content-Type': 'application/json',
     }, timeout=30)
-    res.raise_for_status()
-    return res.headers.get('x-restli-id') or res.json().get('id', '')
+    _check(res)
+    # A successful post is 201 Created with an empty body - the new post's
+    # URN comes back in a response header, not JSON.
+    return res.headers.get('x-restli-id') or res.headers.get('x-linkedin-id') or ''
 
 
 def token_expiry(expires_in):
