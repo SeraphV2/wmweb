@@ -25,10 +25,15 @@ Meta (Facebook + Instagram), via https://developers.facebook.com:
 
 LinkedIn, via https://www.linkedin.com/developers:
   1. Create an app, associate it with a LinkedIn Company Page you admin.
-  2. Request the "Share on LinkedIn" product (w_member_social) and, for
-     posting as the Company Page rather than your personal profile,
-     "Community Management API" (w_organization_social) - the latter
-     requires LinkedIn's approval.
+  2. Request these two products (both auto-approved, no review needed):
+     "Sign In with LinkedIn using OpenID Connect" (openid, profile) and
+     "Share on LinkedIn" (w_member_social). This app currently only
+     requests those scopes, so posting is as your personal profile.
+     Posting as a Company Page instead needs "Community Management API"
+     (w_organization_social) - that one requires LinkedIn's manual
+     approval and isn't wired up yet; asking for it before it's granted
+     makes the whole OAuth request fail with a generic LinkedIn error
+     page ("Bummer, something went wrong").
   3. Add LINKEDIN_REDIRECT_URI (this backend's /api/social/callback/linkedin)
      under OAuth 2.0 settings.
   4. Set env vars: LINKEDIN_CLIENT_ID, LINKEDIN_CLIENT_SECRET,
@@ -58,7 +63,7 @@ LINKEDIN_CLIENT_SECRET = os.environ.get('LINKEDIN_CLIENT_SECRET', '')
 LINKEDIN_REDIRECT_URI = os.environ.get('LINKEDIN_REDIRECT_URI', '')
 LINKEDIN_API_BASE = 'https://api.linkedin.com/v2'
 LINKEDIN_OAUTH_BASE = 'https://www.linkedin.com/oauth/v2'
-LINKEDIN_SCOPES = 'openid profile w_member_social w_organization_social r_organization_admin'
+LINKEDIN_SCOPES = 'openid profile w_member_social'
 
 APP_PUBLIC_URL = os.environ.get('APP_PUBLIC_URL', '').rstrip('/')
 FRONTEND_URL = os.environ.get('FRONTEND_URL', '').rstrip('/')
