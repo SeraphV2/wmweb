@@ -125,6 +125,7 @@ export default function Invoices() {
     catch (e) { toast(e.message, 'error') }
   }
 
+
   const tots = calcTotals(form.items, form.tax_rate, form.discount)
 
   return (
