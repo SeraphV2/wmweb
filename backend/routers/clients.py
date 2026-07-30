@@ -29,6 +29,14 @@ def list_clients(search: str = '', db: Database = Depends(get_db)):
     return rows
 
 
+@router.get("/{cid}/projects")
+def get_client_projects(cid: int, db: Database = Depends(get_db)):
+    return {
+        "projects": db.get_client_projects(cid),
+        "types": db.get_client_project_types(cid),
+    }
+
+
 @router.get("/{cid}")
 def get_client(cid: int, db: Database = Depends(get_db)):
     c = db.get_client(cid)

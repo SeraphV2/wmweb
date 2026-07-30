@@ -8,6 +8,14 @@ import { CLIENT_COLUMNS as CSV_COLUMNS } from '../lib/csvColumns'
 
 const EMPTY_FORM = { first_name: '', last_name: '', email: '', phone: '', address: '', city: '', state: '', zip: '', country: '', notes: '' }
 
+const TYPE_ICONS = { Photography: '📷', Videography: '🎥', Both: '📽️', Other: '✨' }
+const TYPE_COLORS = {
+  Photography: { bg: '#dbeafe', color: '#1e40af' },
+  Videography: { bg: '#fce7f3', color: '#9d174d' },
+  Both:        { bg: '#ede9fe', color: '#5b21b6' },
+  Other:       { bg: '#f3f4f6', color: '#6b7280' },
+}
+
 export default function Clients() {
   const [rows, setRows] = useState([])
   const [search, setSearch] = useState('')
@@ -16,6 +24,8 @@ export default function Clients() {
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [projectTypes, setProjectTypes] = useState(null)
+  const [loadingTypes, setLoadingTypes] = useState(false)
 
   const load = useCallback(() => {
     api.getClients(search).then(setRows).catch(e => toast(e.message, 'error'))
@@ -23,6 +33,16 @@ export default function Clients() {
 
   useEffect(() => { load() }, [load])
   useAutoRefresh(load)
+
+  // Load project type breakdown when a client is selected
+  useEffect(() => {
+    if (!selected) { setProjectTypes(null); return }
+    setLoadingTypes(true)
+    api.getClientProjects(selected.id).then(res => {
+      setProjectTypes(res.types || [])
+    }).catch(() => setProjectTypes([]))
+    .finally(() => setLoadingTypes(false))
+  }, [selected])
 
   function openNew() { setForm(EMPTY_FORM); setModal('new') }
   function exportCsv() { downloadCSV(`clients-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(rows, CSV_COLUMNS)) }
@@ -99,6 +119,38 @@ export default function Clients() {
           <button className="btn btn-danger btn-sm" onClick={del} disabled={!selected || deleting}>🗑 Delete</button>
           <span style={{ marginLeft: 'auto', color: 'var(--muted)', fontSize: 12 }}>{rows.length} client(s)</span>
         </div>
+
+        {/* Project type cards for selected client */}
+        {selected && (
+          <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+            {loadingTypes ? (
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>Loading project types…</span>
+            ) : projectTypes && projectTypes.length > 0 ? (
+              projectTypes.map(t => {
+                const icon = TYPE_ICONS[t.type] || '📁'
+                const colors = TYPE_COLORS[t.type] || TYPE_COLORS.Other
+                return (
+                  <div key={t.type} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '8px 14px', borderRadius: 10,
+                    background: colors.bg, color: colors.color,
+                    fontSize: 13, fontWeight: 600,
+                  }}>
+                    <span style={{ fontSize: 16 }}>{icon}</span>
+                    {t.type}
+                    <span style={{
+                      marginLeft: 4, background: 'rgba(0,0,0,.08)', borderRadius: '50%',
+                      width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, fontWeight: 700,
+                    }}>{t.cnt}</span>
+                  </div>
+                )
+              })
+            ) : projectTypes && projectTypes.length === 0 ? (
+              <span style={{ fontSize: 12, color: 'var(--muted)' }}>No projects yet for this client</span>
+            ) : null}
+          </div>
+        )}
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {rows.length === 0 ? (

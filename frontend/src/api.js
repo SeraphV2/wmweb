@@ -83,6 +83,7 @@ export const api = {
   // Clients
   getClients:     (search = '') => req('GET', `/api/clients/?search=${encodeURIComponent(search)}`),
   getClient:      (id) => req('GET', `/api/clients/${id}`),
+  getClientProjects: (id) => req('GET', `/api/clients/${id}/projects`),
   createClient:   (data) => req('POST', '/api/clients/', data),
   updateClient:   (id, data) => req('PUT', `/api/clients/${id}`, data),
   deleteClient:   (id) => req('DELETE', `/api/clients/${id}`),

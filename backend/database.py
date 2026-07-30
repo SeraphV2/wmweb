@@ -436,6 +436,16 @@ class Database:
         self._ex("SELECT COUNT(*) AS c FROM projects WHERE client_id=%s", (cid,))
         return self._row()['c']
 
+    def get_client_project_types(self, cid):
+        self._ex(
+            "SELECT type, COUNT(*) AS cnt FROM projects WHERE client_id=%s GROUP BY type ORDER BY cnt DESC", (cid,))
+        return self._rows()
+
+    def get_client_projects(self, cid):
+        self._ex(
+            "SELECT * FROM projects WHERE client_id=%s ORDER BY date DESC, id DESC", (cid,))
+        return self._rows()
+
     # ── Projects ──────────────────────────────────────────────────────────────
 
     def get_projects(self, search='', status=''):
