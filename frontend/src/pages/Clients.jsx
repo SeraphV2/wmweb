@@ -138,11 +138,6 @@ export default function Clients() {
                   }}>
                     <span style={{ fontSize: 16 }}>{icon}</span>
                     {t.type}
-                    <span style={{
-                      marginLeft: 4, background: 'rgba(0,0,0,.08)', borderRadius: '50%',
-                      width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 11, fontWeight: 700,
-                    }}>{t.cnt}</span>
                   </div>
                 )
               })
