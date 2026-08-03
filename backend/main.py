@@ -1,11 +1,14 @@
 import os
+import secrets as secrets_mod
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-from auth import create_token, ADMIN_PASSWORD, hash_password, verify_password
+from auth import (create_token, ADMIN_PASSWORD, hash_password, verify_password,
+                  MIN_PASSWORD_LENGTH, RECOVERY_SECRET, MIN_RECOVERY_SECRET_LENGTH)
 from deps import get_db, get_current_user
 from database import Database
 
@@ -66,6 +69,39 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Database = Depends(ge
 @app.get("/api/auth/me")
 def me(user: dict = Depends(get_current_user)):
     return user
+
+
+class RecoverBody(BaseModel):
+    secret: str
+    username: str
+    new_password: str
+
+
+@app.post("/api/auth/recover")
+def recover(body: RecoverBody, db: Database = Depends(get_db)):
+    """Break-glass password reset, used when the only admin is locked out and
+    the normal path (an admin resetting it on the Users page) isn't available.
+
+    Necessarily unauthenticated, so it is inert unless RECOVERY_SECRET is set
+    on the service - and it answers 404 when unset rather than announcing that
+    it exists. Set the var, reset the password, then remove the var again;
+    leaving it set means anyone holding that string can seize any account.
+    """
+    if not RECOVERY_SECRET:
+        raise HTTPException(404, "Not Found")
+    if len(RECOVERY_SECRET) < MIN_RECOVERY_SECRET_LENGTH:
+        raise HTTPException(500, f"RECOVERY_SECRET must be at least {MIN_RECOVERY_SECRET_LENGTH} characters")
+    # Constant-time, so a wrong guess leaks nothing about the correct prefix.
+    if not secrets_mod.compare_digest(body.secret, RECOVERY_SECRET):
+        raise HTTPException(403, "Invalid recovery secret")
+    if len(body.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(400, f"New password must be at least {MIN_PASSWORD_LENGTH} characters")
+    user = db.get_user_by_username(body.username, include_inactive=True)
+    if not user:
+        raise HTTPException(404, "User not found")
+    db.recover_user_password(user['id'], hash_password(body.new_password))
+    db.log_activity(body.username, 'recovered the password for', 'user', user['id'], body.username)
+    return {"ok": True}
 
 
 app.include_router(dashboard.router,      prefix="/api/dashboard",  dependencies=auth_dep)

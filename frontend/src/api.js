@@ -60,6 +60,8 @@ export const api = {
   deleteUser:  (id) => req('DELETE', `/api/users/${id}`),
   assignableUsers: () => req('GET', '/api/users/assignable'),
   updateMyTheme: (theme) => req('PATCH', '/api/users/me/theme', { theme }),
+  changeMyPassword: (currentPassword, newPassword) =>
+    req('PATCH', '/api/users/me/password', { current_password: currentPassword, new_password: newPassword }),
 
   // Activity log (admin only)
   getActivity: () => req('GET', '/api/activity/'),

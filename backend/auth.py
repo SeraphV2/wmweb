@@ -7,6 +7,13 @@ SECRET = os.environ.get("JWT_SECRET", "waffle-dev-secret-change-in-production")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "waffle2024")
 ALGORITHM = "HS256"
 EXPIRE_HOURS = 48
+MIN_PASSWORD_LENGTH = 8
+
+# Break-glass recovery for an admin locked out of their own account. Unset by
+# default, which leaves /api/auth/recover completely inert - set it on the
+# service only for as long as it takes to reset the password, then remove it.
+RECOVERY_SECRET = os.environ.get("RECOVERY_SECRET", "")
+MIN_RECOVERY_SECRET_LENGTH = 16
 
 
 def hash_password(plain: str) -> str:

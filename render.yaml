@@ -10,6 +10,10 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Leave unset. Set temporarily only to recover a locked-out admin
+      # account via POST /api/auth/recover, then remove it again.
+      - key: RECOVERY_SECRET
+        sync: false
       - key: DB_HOST
         sync: false
       - key: DB_PORT

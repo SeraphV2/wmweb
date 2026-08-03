@@ -330,8 +330,13 @@ class Database:
             "FROM users ORDER BY created_at")
         return self._rows()
 
-    def get_user_by_username(self, username):
-        self._ex("SELECT * FROM users WHERE username=%s AND active=1", (username,))
+    def get_user_by_username(self, username, include_inactive=False):
+        # The active=1 filter is what stops a deactivated user logging in, so
+        # it stays on by default - only account recovery passes True.
+        if include_inactive:
+            self._ex("SELECT * FROM users WHERE username=%s", (username,))
+        else:
+            self._ex("SELECT * FROM users WHERE username=%s AND active=1", (username,))
         return self._row()
 
     def get_user_by_id(self, uid):
@@ -340,6 +345,14 @@ class Database:
 
     def update_user_theme(self, uid, theme):
         self._ex("UPDATE users SET theme=%s WHERE id=%s", (theme, uid))
+
+    def update_user_password(self, uid, password_hash):
+        self._ex("UPDATE users SET password_hash=%s WHERE id=%s", (password_hash, uid))
+
+    def recover_user_password(self, uid, password_hash):
+        # Also reactivates: an admin deactivated by mistake is locked out just
+        # as thoroughly as one who forgot their password.
+        self._ex("UPDATE users SET password_hash=%s, active=1 WHERE id=%s", (password_hash, uid))
 
     def record_login(self, uid):
         self._ex("UPDATE users SET last_login=NOW() WHERE id=%s", (uid,))

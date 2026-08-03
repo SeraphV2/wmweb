@@ -20,10 +20,15 @@ const FIELDS = [
   { key: 'thank_you_note', label: 'Thank You Note',    section: 'Invoicing', textarea: true },
 ]
 
+const MIN_PASSWORD_LENGTH = 8
+const EMPTY_PASSWORDS = { current: '', next: '', confirm: '' }
+
 export default function Settings() {
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [theme, setTheme] = useState(getStoredTheme())
+  const [pw, setPw] = useState(EMPTY_PASSWORDS)
+  const [changingPw, setChangingPw] = useState(false)
 
   useEffect(() => {
     api.getSettings().then(setForm).catch(e => toast(e.message, 'error'))
@@ -33,6 +38,24 @@ export default function Settings() {
     setTheme(t)
     applyTheme(t)
     try { await api.updateMyTheme(t) } catch (e) { toast(e.message, 'error') }
+  }
+
+  async function changePassword(e) {
+    e.preventDefault()
+    if (pw.next !== pw.confirm) { toast('New passwords do not match', 'error'); return }
+    if (pw.next.length < MIN_PASSWORD_LENGTH) {
+      toast(`New password must be at least ${MIN_PASSWORD_LENGTH} characters`, 'error'); return
+    }
+    setChangingPw(true)
+    try {
+      await api.changeMyPassword(pw.current, pw.next)
+      toast('Password changed')
+      setPw(EMPTY_PASSWORDS)
+    } catch (err) {
+      toast(err.message, 'error')
+    } finally {
+      setChangingPw(false)
+    }
   }
 
   async function save(e) {
@@ -65,6 +88,35 @@ export default function Settings() {
             </div>
             <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10 }}>Saved to your account, so it follows you to any device you log in on.</p>
           </div>
+
+          <form onSubmit={changePassword} className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 16 }}>Password</h3>
+            <div className="field">
+              <label>Current Password</label>
+              <input className="input" type="password" autoComplete="current-password"
+                value={pw.current} onChange={e => setPw(s => ({ ...s, current: e.target.value }))} />
+            </div>
+            <div className="grid-2">
+              <div className="field">
+                <label>New Password</label>
+                <input className="input" type="password" autoComplete="new-password"
+                  value={pw.next} onChange={e => setPw(s => ({ ...s, next: e.target.value }))} />
+              </div>
+              <div className="field">
+                <label>Confirm New Password</label>
+                <input className="input" type="password" autoComplete="new-password"
+                  value={pw.confirm} onChange={e => setPw(s => ({ ...s, confirm: e.target.value }))} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'flex-end' }}>
+              <span style={{ fontSize: 11, color: 'var(--muted)', marginRight: 'auto' }}>
+                At least {MIN_PASSWORD_LENGTH} characters. You'll stay logged in on this device.
+              </span>
+              <button className="btn btn-primary" type="submit" disabled={changingPw}>
+                {changingPw ? 'Changing…' : 'Change Password'}
+              </button>
+            </div>
+          </form>
 
           <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {sections.map(section => (

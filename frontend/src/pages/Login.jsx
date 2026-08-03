@@ -70,6 +70,9 @@ export default function Login() {
               {loading ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
+          <p style={{ color: 'var(--muted)', fontSize: 11, marginTop: 14, textAlign: 'center' }}>
+            Forgot your password? Ask an admin to reset it for you on the Users page.
+          </p>
         </div>
 
         <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 11, marginTop: 16 }}>

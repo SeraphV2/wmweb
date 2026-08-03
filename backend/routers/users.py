@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from database import Database
 from deps import get_db, get_current_user, require_admin
-from auth import hash_password
+from auth import hash_password, verify_password, MIN_PASSWORD_LENGTH
 
 router = APIRouter()
 
@@ -27,6 +27,11 @@ class UserUpdate(BaseModel):
 
 class ThemeBody(BaseModel):
     theme: str
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
 
 
 @router.get("/")
@@ -60,6 +65,24 @@ def update_my_theme(
     if not user:
         raise HTTPException(404, "User not found")
     db.update_user_theme(user['id'], body.theme)
+    return {"ok": True}
+
+
+@router.patch("/me/password")
+def change_my_password(
+    body: PasswordChange,
+    current: dict = Depends(get_current_user),
+    db: Database = Depends(get_db),
+):
+    user = db.get_user_by_username(current['username'])
+    if not user:
+        raise HTTPException(404, "User not found")
+    if not verify_password(body.current_password, user['password_hash']):
+        raise HTTPException(400, "Current password is incorrect")
+    if len(body.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(400, f"New password must be at least {MIN_PASSWORD_LENGTH} characters")
+    db.update_user_password(user['id'], hash_password(body.new_password))
+    db.log_activity(current['username'], 'changed password for', 'user', user['id'], current['username'])
     return {"ok": True}
 
 
