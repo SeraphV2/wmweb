@@ -4,11 +4,11 @@ import { api } from '../api'
 import { toast } from '../components/Toast'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 
-// Facebook and Instagram are disabled for now (no Meta app credentials yet) -
-// re-add them here once META_APP_ID/META_APP_SECRET are set up.
+// Facebook and Instagram both connect through a single Meta OAuth flow - the
+// callback saves the Page and its linked Instagram Business account together.
 const PLATFORMS = [
-  // { key: 'facebook',  label: 'Facebook',  icon: '📘', connectVia: 'meta' },
-  // { key: 'instagram', label: 'Instagram', icon: '📸', connectVia: 'meta' },
+  { key: 'facebook',  label: 'Facebook',  icon: '📘', connectVia: 'meta' },
+  { key: 'instagram', label: 'Instagram', icon: '📸', connectVia: 'meta' },
   { key: 'linkedin',  label: 'LinkedIn',  icon: '💼', connectVia: 'linkedin' },
 ]
 
