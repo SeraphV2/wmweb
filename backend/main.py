@@ -1,7 +1,7 @@
 import os
 import secrets as secrets_mod
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
@@ -12,6 +12,7 @@ from auth import (create_token, ADMIN_PASSWORD, hash_password, verify_password,
 from deps import get_db, get_current_user
 from database import Database
 
+import totp as totp_lib
 from routers import clients, projects, invoices, expenses, equipment, dashboard, reports, settings, tasks, activity, admin
 from routers import users as users_router
 from routers import wix_inbound
@@ -69,6 +70,48 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Database = Depends(ge
 @app.get("/api/auth/me")
 def me(user: dict = Depends(get_current_user)):
     return user
+
+
+class ResetBody(BaseModel):
+    username: str
+    code: str
+    new_password: str
+
+
+@app.post("/api/auth/reset-with-totp")
+def reset_with_totp(body: ResetBody, request: Request, db: Database = Depends(get_db)):
+    """Password reset from the login screen, proved with an authenticator code.
+
+    Every failure returns the same message. Saying "no such user" or "2FA not
+    set up" here would turn this endpoint into a way to enumerate accounts and
+    find which ones lack a second factor - and an unauthenticated caller has no
+    business learning either.
+    """
+    generic = "Username or code is incorrect"
+    ip = request.client.host if request.client else ''
+    keys = (f"u:{body.username.lower()}", f"ip:{ip}")
+
+    if totp_lib.throttled(*keys):
+        raise HTTPException(429, "Too many attempts. Wait 15 minutes and try again.")
+    if len(body.new_password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(400, f"New password must be at least {MIN_PASSWORD_LENGTH} characters")
+
+    user = db.get_user_by_username(body.username)
+    if not user or not user.get('totp_enabled') or not user.get('totp_secret'):
+        totp_lib.record_attempt(*keys)
+        raise HTTPException(400, generic)
+
+    step = totp_lib.verify(user['totp_secret'], body.code, user.get('totp_last_step') or 0)
+    if step is None:
+        totp_lib.record_attempt(*keys)
+        raise HTTPException(400, generic)
+
+    # Burn the step before the write, so the same code can't be replayed.
+    db.set_user_totp_step(user['id'], step)
+    db.update_user_password(user['id'], hash_password(body.new_password))
+    totp_lib.clear_attempts(*keys)
+    db.log_activity(user['username'], 'reset their password via 2FA for', 'user', user['id'], user['username'])
+    return {"ok": True}
 
 
 class RecoverBody(BaseModel):

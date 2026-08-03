@@ -29,10 +29,45 @@ export default function Settings() {
   const [theme, setTheme] = useState(getStoredTheme())
   const [pw, setPw] = useState(EMPTY_PASSWORDS)
   const [changingPw, setChangingPw] = useState(false)
+  const [totpOn, setTotpOn] = useState(false)
+  const [totpSetup, setTotpSetup] = useState(null)   // { secret, qr_svg } while enrolling
+  const [totpCode, setTotpCode] = useState('')
+  const [totpBusy, setTotpBusy] = useState(false)
 
   useEffect(() => {
     api.getSettings().then(setForm).catch(e => toast(e.message, 'error'))
+    api.getTotpStatus().then(r => setTotpOn(r.enabled)).catch(() => {})
   }, [])
+
+  async function startTotp() {
+    setTotpBusy(true)
+    try { setTotpSetup(await api.setupTotp()) }
+    catch (e) { toast(e.message, 'error') }
+    finally { setTotpBusy(false) }
+  }
+
+  async function confirmTotp(e) {
+    e.preventDefault()
+    setTotpBusy(true)
+    try {
+      await api.enableTotp(totpCode)
+      toast('Two-factor enabled')
+      setTotpOn(true); setTotpSetup(null); setTotpCode('')
+    } catch (err) { toast(err.message, 'error') }
+    finally { setTotpBusy(false) }
+  }
+
+  async function turnOffTotp() {
+    const password = prompt('Enter your password to turn off two-factor:')
+    if (!password) return
+    setTotpBusy(true)
+    try {
+      await api.disableTotp(password)
+      toast('Two-factor disabled')
+      setTotpOn(false)
+    } catch (e) { toast(e.message, 'error') }
+    finally { setTotpBusy(false) }
+  }
 
   async function chooseTheme(t) {
     setTheme(t)
@@ -117,6 +152,49 @@ export default function Settings() {
               </button>
             </div>
           </form>
+
+          <div className="card">
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', marginBottom: 6 }}>Two-Factor Authentication</h3>
+            <p style={{ fontSize: 11.5, color: 'var(--muted)', marginBottom: 14 }}>
+              Link an authenticator app so you can reset your own password from the login
+              screen if you forget it, without waiting for an admin.
+            </p>
+
+            {totpOn ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--green, #166534)' }}>✓ Enabled</span>
+                <button className="btn btn-ghost btn-sm" disabled={totpBusy} onClick={turnOffTotp}
+                  style={{ marginLeft: 'auto' }}>Turn off</button>
+              </div>
+            ) : totpSetup ? (
+              <form onSubmit={confirmTotp}>
+                <p style={{ fontSize: 12, marginBottom: 10 }}>
+                  1. Scan this with Google Authenticator, 1Password, or similar.
+                </p>
+                <div style={{ width: 168, background: '#fff', padding: 8, borderRadius: 8, marginBottom: 12 }}
+                  dangerouslySetInnerHTML={{ __html: totpSetup.qr_svg }} />
+                <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>
+                  Can't scan? Enter this key manually:<br />
+                  <code style={{ fontSize: 11.5, letterSpacing: 1, wordBreak: 'break-all' }}>{totpSetup.secret}</code>
+                </p>
+                <div className="field">
+                  <label>2. Enter the 6-digit code it shows</label>
+                  <input className="input" inputMode="numeric" maxLength={6} placeholder="000000"
+                    value={totpCode} onChange={e => setTotpCode(e.target.value)} style={{ maxWidth: 160 }} />
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn btn-primary" type="submit" disabled={totpBusy}>
+                    {totpBusy ? 'Verifying…' : 'Verify & Enable'}
+                  </button>
+                  <button className="btn btn-ghost" type="button" onClick={() => { setTotpSetup(null); setTotpCode('') }}>Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <button className="btn btn-ghost" disabled={totpBusy} onClick={startTotp}>
+                {totpBusy ? 'Loading…' : 'Set up authenticator app'}
+              </button>
+            )}
+          </div>
 
           <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {sections.map(section => (

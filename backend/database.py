@@ -282,6 +282,11 @@ class Database:
             "ALTER TABLE clients MODIFY COLUMN name VARCHAR(255) NULL DEFAULT ''",
             "ALTER TABLE clients ADD COLUMN wix_contact_id VARCHAR(64) DEFAULT NULL",
             "ALTER TABLE invoices ADD COLUMN wix_invoice_id VARCHAR(64) DEFAULT NULL",
+            "ALTER TABLE users ADD COLUMN totp_secret VARCHAR(64) DEFAULT ''",
+            "ALTER TABLE users ADD COLUMN totp_enabled TINYINT(1) DEFAULT 0",
+            # Time-step counter of the last code accepted, so a code that is
+            # still inside its 30s window can't be replayed to reset twice.
+            "ALTER TABLE users ADD COLUMN totp_last_step BIGINT DEFAULT 0",
         ]:
             try:
                 self._mc.execute(stmt)
@@ -348,6 +353,16 @@ class Database:
 
     def update_user_password(self, uid, password_hash):
         self._ex("UPDATE users SET password_hash=%s WHERE id=%s", (password_hash, uid))
+
+    def set_user_totp(self, uid, secret, enabled):
+        self._ex("UPDATE users SET totp_secret=%s, totp_enabled=%s WHERE id=%s",
+                 (secret, 1 if enabled else 0, uid))
+
+    def clear_user_totp(self, uid):
+        self._ex("UPDATE users SET totp_secret='', totp_enabled=0, totp_last_step=0 WHERE id=%s", (uid,))
+
+    def set_user_totp_step(self, uid, step):
+        self._ex("UPDATE users SET totp_last_step=%s WHERE id=%s", (step, uid))
 
     def recover_user_password(self, uid, password_hash):
         # Also reactivates: an admin deactivated by mistake is locked out just

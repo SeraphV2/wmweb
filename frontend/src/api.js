@@ -63,6 +63,14 @@ export const api = {
   changeMyPassword: (currentPassword, newPassword) =>
     req('PATCH', '/api/users/me/password', { current_password: currentPassword, new_password: newPassword }),
 
+  // Two-factor (authenticator app), used to reset a password from the login screen
+  getTotpStatus:  () => req('GET',  '/api/users/me/totp'),
+  setupTotp:      () => req('POST', '/api/users/me/totp/setup'),
+  enableTotp:     (code) => req('POST', '/api/users/me/totp/enable', { code }),
+  disableTotp:    (password) => req('POST', '/api/users/me/totp/disable', { password }),
+  resetWithTotp:  (username, code, newPassword) =>
+    req('POST', '/api/auth/reset-with-totp', { username, code, new_password: newPassword }),
+
   // Activity log (admin only)
   getActivity: () => req('GET', '/api/activity/'),
 
